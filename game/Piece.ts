@@ -4,29 +4,33 @@ import { GRID_HEIGHT, GRID_WIDTH, PIECES, WALL_KICKS_CLOCKWISE_I, WALL_KICKS_CLO
 import { Grid } from './Grid.ts'
 
 export class Piece {
-  private readonly grid: Grid
-  public readonly type: number
-  private x: number
-  private y = 22
-  private r = 0
+  #grid: Grid
+  #type: number
+  #x: number
+  #y = 22
+  #r = 0
 
   public constructor(grid: Grid, type: number) {
     const model = PIECES[type]
-    this.grid = grid
-    this.type = type
-    this.x = Math.floor((GRID_WIDTH - model.length) / 2)
+    this.#grid = grid
+    this.#type = type
+    this.#x = Math.floor((GRID_WIDTH - model.length) / 2)
+  }
+
+  public get type(): number {
+    return this.#type
   }
 
   public get cell(): number {
-    return this.type + 1
+    return this.#type + 1
   }
 
   public shift(dx: number, dy: number): boolean {
-    const x = this.x + dx
-    const y = this.y + dy
-    if (this.couldMoveTo(x, y, this.r)) {
-      this.x = x
-      this.y = y
+    const x = this.#x + dx
+    const y = this.#y + dy
+    if (this.couldMoveTo(x, y, this.#r)) {
+      this.#x = x
+      this.#y = y
       return true
     } else {
       return false
@@ -35,14 +39,14 @@ export class Piece {
 
   public rotate(dr: number): boolean {
     // We use a binary AND to stay within [0..3]
-    const r = (this.r + dr) & 3
+    const r = (this.#r + dr) & 3
 
-    const wallKicks = getWallKicks(this.type, dr >= 0)[this.r]
+    const wallKicks = getWallKicks(this.#type, dr >= 0)[this.#r]
     for (const [dx, dy] of wallKicks) {
-      if (this.couldMoveTo(this.x + dx, this.y + dy, r)) {
-        this.x += dx
-        this.y += dy
-        this.r = r
+      if (this.couldMoveTo(this.#x + dx, this.#y + dy, r)) {
+        this.#x += dx
+        this.#y += dy
+        this.#r = r
         return true
       }
     }
@@ -51,24 +55,24 @@ export class Piece {
   }
 
   public cells(): Generator<[number, number], void, void> {
-    return iterCellPositions(this.type, this.x, this.y, this.r)
+    return iterCellPositions(this.#type, this.#x, this.#y, this.#r)
   }
 
   public draw(): void {
     for (const [x, y] of this.cells()) {
-      this.grid.setCell(x, y, this.cell)
+      this.#grid.setCell(x, y, this.cell)
     }
   }
 
   public erase(): void {
     for (const [x, y] of this.cells()) {
-      this.grid.setCell(x, y, 0)
+      this.#grid.setCell(x, y, 0)
     }
   }
 
   private couldMoveTo(newX: number, newY: number, newR: number): boolean {
-    for (const [x, y] of iterCellPositions(this.type, newX, newY, newR)) {
-      if (!inBounds(x, y) || this.grid.getCell(x, y) > 0) {
+    for (const [x, y] of iterCellPositions(this.#type, newX, newY, newR)) {
+      if (!inBounds(x, y) || this.#grid.getCell(x, y) > 0) {
         return false
       }
     }

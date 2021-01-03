@@ -7,24 +7,24 @@ export interface Line {
 }
 
 export class Grid {
-  private cells: number[] = []
+  #cells: number[] = []
 
   public constructor() {
     for (let y = 0; y < GRID_HEIGHT; y++) {
       for (let x = 0; x < GRID_WIDTH; x++) {
-        this.cells.push(0)
+        this.#cells.push(0)
       }
     }
   }
 
   public getCell(x: number, y: number): number {
     const i = computeIndex(x, y)
-    return this.cells[i]
+    return this.#cells[i]
   }
 
   public setCell(x: number, y: number, cell: number): void {
     const i = computeIndex(x, y)
-    this.cells[i] = cell
+    this.#cells[i] = cell
   }
 
   public eraseFullLines(): Line[] {
@@ -51,7 +51,7 @@ export class Grid {
 
   private getLine(y: number): Line {
     const i = y * GRID_WIDTH
-    const cells = this.cells.slice(i, i + GRID_WIDTH)
+    const cells = this.#cells.slice(i, i + GRID_WIDTH)
     return { y, cells }
   }
 

@@ -5,17 +5,17 @@ const MIN = -2147483648
 const MAX = 2147483647
 
 export class Rng {
-	private seed: number
-	private value: number
+	#seed: number
+	#value: number
 
-	constructor(seed: number = randomInt()) {
-    this.seed = safe(seed)
-		this.value = this.seed
+	public constructor(seed: number = randomInt()) {
+    this.#seed = safe(seed)
+		this.#value = this.#seed
 	}
 
 	public next(min: number = 0, max: number = 1): number {
-		this.value = xorshift(this.value)
-		return map(this.value, MIN, MAX, min, max)
+		this.#value = xorshift(this.#value)
+		return map(this.#value, MIN, MAX, min, max)
 	}
 
 	public nextInt(min: number, max: number): number {

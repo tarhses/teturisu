@@ -1,4 +1,8 @@
+import svelte from 'rollup-plugin-svelte'
+import sveltePreprocess from 'svelte-preprocess'
+import css from 'rollup-plugin-css-only'
 import resolve from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
 import typescript from '@rollup/plugin-typescript'
 import strip from '@rollup/plugin-strip'
 import { terser } from 'rollup-plugin-terser'
@@ -19,10 +23,23 @@ export default {
   },
 
   plugins: [
+    svelte({
+      preprocess: sveltePreprocess(),
+      compilerOptions: {
+        dev: !production
+      }
+    }),
+
+    css({
+      output: 'bundle.css'
+    }),
+
     resolve({
       browser: true,
       dedupe: ['svelte']
     }),
+
+    commonjs(),
 
     typescript({
       sourceMap: !production,
