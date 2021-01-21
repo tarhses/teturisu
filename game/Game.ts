@@ -30,7 +30,7 @@ export class Game {
   #grid = new Grid()
   #piece: Piece
   #bag: Bag
-  #sate = State.DROPPING
+  #state = State.DROPPING
   #frame = 0
   #counter: number
   #buffer: Map<number, Move[]> = new Map()
@@ -59,7 +59,7 @@ export class Game {
   }
 
   private update(): void {
-    switch (this.#sate) {
+    switch (this.#state) {
       case State.DROPPING:
       case State.SOFT_DROPPING:
         const success = this.#piece.shift(0, -1)
@@ -72,9 +72,9 @@ export class Game {
           this.#history.push({
             type: EntryType.LOCKING,
             frame: this.#frame,
-            soft: this.#sate === State.SOFT_DROPPING
+            soft: this.#state === State.SOFT_DROPPING
           })
-          this.#sate = State.LOCKING
+          this.#state = State.LOCKING
         }
         break
 
@@ -88,7 +88,7 @@ export class Game {
         })
 
         this.#piece = this.newPiece()
-        this.#sate = State.DROPPING
+        this.#state = State.DROPPING
         break
     }
   }
@@ -99,8 +99,8 @@ export class Game {
       this.#buffer.delete(this.#frame)
       for (const move of moves) {
         const success = this.executeMove(move)
-        if (success && this.#sate === State.LOCKING) {
-          this.#sate = State.DROPPING
+        if (success && this.#state === State.LOCKING) {
+          this.#state = State.DROPPING
         }
       }
     }
@@ -124,8 +124,8 @@ export class Game {
         return false // TODO
 
       case Move.START_SOFT_DROP:
-        if (this.#sate === State.DROPPING) {
-          this.#sate = State.SOFT_DROPPING
+        if (this.#state === State.DROPPING) {
+          this.#state = State.SOFT_DROPPING
           this.#counter = this.counterLimit
           return true
         } else {
@@ -133,8 +133,8 @@ export class Game {
         }
 
       case Move.STOP_SOFT_DROP:
-        if (this.#sate === State.SOFT_DROPPING) {
-          this.#sate = State.DROPPING
+        if (this.#state === State.SOFT_DROPPING) {
+          this.#state = State.DROPPING
           return true
         } else {
           return false
@@ -188,7 +188,7 @@ export class Game {
         break
 
       case EntryType.LOCKING:
-        this.#sate = entry.soft ? State.SOFT_DROPPING : State.DROPPING
+        this.#state = entry.soft ? State.SOFT_DROPPING : State.DROPPING
         break
 
       case EntryType.LOCKED:
@@ -198,7 +198,7 @@ export class Game {
         this.#piece = entry.piece
         this.#piece.erase()
 
-        this.#sate = State.LOCKING
+        this.#state = State.LOCKING
         break
     }
   }
@@ -223,7 +223,7 @@ export class Game {
   }
 
   private get counterLimit(): number {
-    switch (this.#sate) {
+    switch (this.#state) {
       case State.DROPPING: return DROP_TICKS - 1
       case State.SOFT_DROPPING: return SOFT_DROP_TICKS - 1
       case State.LOCKING: return LOCK_TICKS - 1
