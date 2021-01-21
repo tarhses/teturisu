@@ -18,7 +18,6 @@ if (import.meta.main) {
 
 async function handleWebsocket(socket: WebSocket): Promise<void> {
   const session = new Session(socket, broker)
-
   try {
     for await (const msg of socket) {
       if (typeof msg === 'string') {
@@ -29,11 +28,11 @@ async function handleWebsocket(socket: WebSocket): Promise<void> {
   } catch (err) {
     console.error(`session error: ${err}`)
     if (!socket.isClosed) {
-      await socket.close(1000).catch(console.error)
+      socket.close(1000).catch(err => console.error(`closing error: ${err}`))
     }
+  } finally {
+    session.leave()
   }
-
-  session.leave()
 }
 
 function parseRequest(json: string): Request {
