@@ -5,8 +5,8 @@ export class Board {
   #name: string
   #game: Game
 
-  public constructor(seed: number, player?: Player) {
-    this.#name = player?.name ?? 'Anonymous'
+  public constructor(seed: number, player: Player) {
+    this.#name = player.name
     this.#game = new Game(seed)
 
     if (player !== undefined) {
@@ -23,6 +23,14 @@ export class Board {
 
   public set name(name: string) {
     this.#name = name
+  }
+
+  public get score(): number {
+    return 12630 // TODO
+  }
+
+  public get nextPiece(): number {
+    return this.#game.nextPiece
   }
 
   public get frame(): number {

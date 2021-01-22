@@ -1,28 +1,30 @@
-import { serve } from 'https://deno.land/std@0.79.0/http/server.ts'
-import { acceptWebSocket, WebSocket } from 'https://deno.land/std@0.79.0/ws/mod.ts'
-import { Request, RequestType } from '../game/protocol.ts'
-import { Broker } from './Broker.ts'
+import { serve, acceptWebSocket, WebSocket } from './deps.ts'
+import { validateRequest } from './validation.ts'
+import { Server } from './Server.ts'
 import { Session } from './Session.ts'
+import { Request } from '../game/protocol.ts'
 
-const broker = new Broker()
+const port = Deno.env.get('PORT') ?? '8001'
+const server = new Server()
 
-if (import.meta.main) {
-  const port = Deno.env.get('PORT') ?? '8001'
-  for await (const req of serve(`:${port}`)) {
-    const { conn, r: bufReader, w: bufWriter, headers } = req
-    acceptWebSocket({ conn, bufReader, bufWriter, headers })
-      .then(handleWebsocket)
-      .catch(err => console.error(`connection error: ${err}`))
-  }
+console.info(`listening on port ${port}`)
+
+for await (const req of serve(`:${port}`)) {
+  const { conn, r: bufReader, w: bufWriter, headers } = req
+  acceptWebSocket({ conn, bufReader, bufWriter, headers })
+    .then(handleWebsocket)
+    .catch(err => console.error(`connection error: ${err}`))
 }
 
 async function handleWebsocket(socket: WebSocket): Promise<void> {
-  const session = new Session(socket, broker)
+  const session = new Session(socket, server)
   try {
     for await (const msg of socket) {
       if (typeof msg === 'string') {
         const req = parseRequest(msg)
-        session.handleRequest(req)
+        if (req !== null) {
+          session.handleRequest(req)
+        }
       }
     }
   } catch (err) {
@@ -31,18 +33,18 @@ async function handleWebsocket(socket: WebSocket): Promise<void> {
       socket.close(1000).catch(err => console.error(`closing error: ${err}`))
     }
   } finally {
-    session.leave()
+    session.disconnect()
   }
 }
 
-function parseRequest(json: string): Request {
-  const req: Request = JSON.parse(json)
-  if (typeof req.type !== 'number' || req.type >= RequestType.COUNT) {
-    throw new TypeError(`invalid request (type = ${req.type})`)
-  }
+function parseRequest(json: string): Request | null {
+  const req = JSON.parse(json) as Request
 
-  switch (req.type) {
-    // TODO: validation
+  try {
+    validateRequest(req)
+  } catch (err) {
+    console.error(`validation error: ${err}, ${json}`)
+    return null
   }
 
   return req

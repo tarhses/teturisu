@@ -13,8 +13,8 @@ export type Input = [Move, number]
 
 export interface Player {
   name: string
-  inputs: Input[]
   frame: number
+  inputs: Input[]
 }
 
 export enum RequestType {
@@ -26,13 +26,6 @@ export enum RequestType {
   COUNT // Keep last
 }
 
-export type Request =
-  { type: RequestType.CREATE_ROOM, playerName: string } |
-  { type: RequestType.JOIN_ROOM, roomId: string, playerName: string } |
-  { type: RequestType.START_GAME } |
-  { type: RequestType.SEND_INPUT, inputs: Input[] } |
-  { type: RequestType.UPDATE_PROFILE, playerName: string }
-
 export enum ResponseType {
   JOINED_ROOM,
   ADDED_PLAYER,
@@ -43,10 +36,17 @@ export enum ResponseType {
   COUNT // Keep last
 }
 
+export type Request =
+  { type: RequestType.CREATE_ROOM } |
+  { type: RequestType.JOIN_ROOM, id?: string } |
+  { type: RequestType.START_GAME } |
+  { type: RequestType.SEND_INPUT, inputs: Input[] } |
+  { type: RequestType.UPDATE_PROFILE, name: string }
+
 export type Response =
-  { type: ResponseType.JOINED_ROOM, roomId: string, players: Player[], started: number, seed: number } |
-  { type: ResponseType.ADDED_PLAYER, playerName: string } |
-  { type: ResponseType.REMOVED_PLAYER, playerId: number } |
+  { type: ResponseType.JOINED_ROOM, id: string, seed: number, started: boolean, players: Player[] } |
+  { type: ResponseType.ADDED_PLAYER, name: string } |
+  { type: ResponseType.REMOVED_PLAYER, id: number } |
   { type: ResponseType.STARTED_GAME } |
   { type: ResponseType.RECEIVED_INPUT, inputs: Input[][] } |
-  { type: ResponseType.UPDATED_PROFILE, playerId: number, playerName: string }
+  { type: ResponseType.UPDATED_PROFILE, id: number, name: string }

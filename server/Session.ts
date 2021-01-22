@@ -1,28 +1,44 @@
-import { WebSocket } from 'https://deno.land/std@0.79.0/ws/mod.ts'
+import { WebSocket } from './deps.ts'
 import { TICK_FRAMERATE } from '../game/constants.ts'
-import { Input, Request, RequestType, Response, ResponseType } from '../game/protocol.ts'
+import { Input, RequestType, Request, Response } from '../game/protocol.ts'
+import { Server } from './Server.ts'
 import { Room } from './Room.ts'
-import { Broker } from './Broker.ts'
+
+class Inputs {
+  #inputs: Input[] = []
+  #index = 0
+
+  public get all(): Input[] {
+    return this.#inputs
+  }
+
+  public get buffer(): Input[] {
+    const inputs = this.#inputs.slice(this.#index)
+    this.#index = this.#inputs.length
+    return inputs
+  }
+
+  public push(inputs: Input[]): void {
+    this.#inputs.push(...inputs)
+  }
+
+  public clear(): void {
+    this.#inputs = []
+    this.#index = 0
+  }
+}
 
 export class Session {
   #socket: WebSocket
-  #broker: Broker
-  #room: Room
-  #id: number
-  #name: string = 'Anonymous'
-  #inputs: Input[] = []
-  #started: number = 0
-  #bufferIndex: number = 0
+  #server: Server
+  #room: Room | null = null
+  #name = 'Anonymous'
+  #inputs = new Inputs()
+  #startTimestamp = 0
 
-  public constructor(socket: WebSocket, broker: Broker) {
+  public constructor(socket: WebSocket, server: Server) {
     this.#socket = socket
-    this.#broker = broker
-    this.#room = broker.getRoom()
-    this.#id = this.#room.addSession(this)
-  }
-
-  public get id(): number {
-    return this.#id
+    this.#server = server
   }
 
   public get name(): string {
@@ -30,83 +46,75 @@ export class Session {
   }
 
   public get inputs(): Input[] {
-    return this.#inputs
+    return this.#inputs.all
   }
 
   public get bufferedInputs(): Input[] {
-    const inputs = this.#inputs.slice(this.#bufferIndex)
-    this.#bufferIndex = this.#inputs.length
-    return inputs
+    return this.#inputs.buffer
+  }
+
+  public connect(room: Room): void {
+    this.disconnect()
+    room.addSession(this)
+    this.#room = room
+  }
+
+  public disconnect(): void {
+    if (this.#room !== null) {
+      this.#room.removeSession(this)
+      this.#room = null
+      this.#inputs.clear()
+      this.#startTimestamp = 0
+    }
+  }
+
+  public start(timestamp: number = performance.now()): void {
+    this.#startTimestamp = timestamp
   }
 
   public get frame(): number {
-    return this.#started > 0
-      ? Math.floor((Date.now() - this.#started) / TICK_FRAMERATE)
-      : 0
+    if (this.#startTimestamp > 0) {
+      const elapsed = performance.now() - this.#startTimestamp
+      return Math.floor(elapsed / TICK_FRAMERATE)
+    } else {
+      return 0
+    }
   }
 
   public handleRequest(req: Request): void {
     switch (req.type) {
-      case RequestType.CREATE_ROOM: {
-        this.#name = req.playerName
-        const room = this.#broker.newRoom()
-        this.join(room)
+      case RequestType.CREATE_ROOM:
+        this.connect(this.#server.newRoom())
         break
-      }
 
-      case RequestType.JOIN_ROOM: {
-        this.#name = req.playerName
-        const room = this.#broker.getRoom(req.roomId)
-        this.join(room)
+      case RequestType.JOIN_ROOM:
+        this.connect(this.#server.getRoom(req.id))
         break
-      }
 
-      case RequestType.START_GAME: {
-        if (!this.#room.started) {
+      case RequestType.START_GAME:
+        if (this.#room !== null && !this.#room.started) {
           this.#room.start()
         }
         break
-      }
 
-      case RequestType.SEND_INPUT: {
-        this.#inputs.push(...req.inputs)
+      case RequestType.SEND_INPUT:
+        if (this.#room !== null && this.#room.started) {
+          this.#inputs.push(req.inputs)
+        }
         break
-      }
 
-      case RequestType.UPDATE_PROFILE: {
-        this.#name = req.playerName
-        this.#room.send({
-          type: ResponseType.UPDATED_PROFILE,
-          playerId: this.#id,
-          playerName: this.#name
-        })
+      case RequestType.UPDATE_PROFILE:
+        this.#name = req.name
+        if (this.#room !== null) {
+          this.#room.sendUpdatedProfile(this, req.name)
+        }
         break
-      }
-    }
-  }
-
-  private join(room: Room): void {
-    this.#room.removeSession(this)
-    this.#room = room
-    this.#id = room.addSession(this)
-  }
-
-  public start(now: number): void {
-    this.#started = now
-  }
-
-  public leave(): void {
-    this.#room.removeSession(this)
-  }
-
-  public notifyRemovedSession(session: Session): void {
-    if (this.#id > session.#id) {
-      this.#id -= 1
     }
   }
 
   public send(res: Response): void {
-    this.sendRaw(JSON.stringify(res))
+    const json = JSON.stringify(res)
+    this.sendRaw(json)
   }
 
   public sendRaw(json: string): void {

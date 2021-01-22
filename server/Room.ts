@@ -1,85 +1,92 @@
-import { encode } from 'https://deno.land/std@0.79.0/encoding/base64url.ts'
+import { encode } from './deps.ts'
 import { Response, ResponseType } from '../game/protocol.ts'
+import { Server } from './Server.ts'
 import { Session } from './Session.ts'
 
-const INTERVAL = 500
+export const INPUTS_INTERVAL = 1000
 
 export class Room {
-  #id: string
-  #started: number = 0
-  #seed: number = generateSeed()
+  #id = generateId()
+  #server: Server
   #sessions: Session[] = []
-  #interval: number
+  #seed = generateSeed()
+  #startTimestamp = 0
+  #inputsInterval?: number
 
-  public constructor(id: string = generateId()) {
-    this.#id = id
-    this.#interval = setInterval(() => {
-      const inputs = this.#sessions.map(s => s.bufferedInputs)
-      if (inputs.some(i => i.length > 0)) {
-        this.send({
-          type: ResponseType.RECEIVED_INPUT,
-          inputs
-        })
-      }
-    }, INTERVAL)
+  public constructor(server: Server) {
+    this.#server = server
+    this.log('created')
+  }
+
+  public delete(): void {
+    clearInterval(this.#inputsInterval)
+    this.#server.deleteRoom(this.#id)
+    this.log('deleted')
   }
 
   public get id(): string {
     return this.#id
   }
 
-  public get started(): boolean {
-    return this.#started > 0
-  }
-
   public start(): void {
-    this.#started = Date.now()
-    this.send({
-      type: ResponseType.STARTED_GAME
-    })
+    console.assert(!this.started)
+    this.log('starting')
 
-    const now = Date.now()
-    for (const s of this.#sessions) {
-      s.start(now)
+    this.send({ type: ResponseType.STARTED_GAME })
+
+    this.#startTimestamp = performance.now()
+    for (const session of this.#sessions) {
+      session.start(this.#startTimestamp)
     }
+
+    this.#inputsInterval = setInterval(() => {
+      const inputs = this.#sessions.map(s => s.bufferedInputs)
+      if (inputs.some(i => i.length > 0)) {
+        this.send({ type: ResponseType.RECEIVED_INPUT, inputs })
+      }
+    }, INPUTS_INTERVAL)
   }
 
-  public addSession(session: Session): number {
-    this.send({
-      type: ResponseType.ADDED_PLAYER,
-      playerName: session.name
-    })
+  public get started(): boolean {
+    return this.#startTimestamp > 0
+  }
 
-    const id = this.#sessions.length
+  public addSession(session: Session): void {
+    console.assert(!this.#sessions.includes(session))
+    this.log(`'${session.name}' joining`)
+
+    this.send({ type: ResponseType.ADDED_PLAYER, name: session.name })
+
     this.#sessions.push(session)
     if (this.started) {
-      session.start(Date.now())
+      session.start()
     }
 
     session.send({
       type: ResponseType.JOINED_ROOM,
-      roomId: this.#id,
-      players: this.#sessions.map(s => ({ name: s.name, inputs: s.inputs, frame: s.frame })),
-      started: this.#started,
-      seed: this.#seed
+      id: this.#id,
+      seed: this.#seed,
+      started: this.started,
+      players: this.#sessions.map(s => ({
+        name: s.name,
+        frame: s.frame,
+        inputs: s.inputs
+      }))
     })
-
-    console.log(`[${this.#id}] session #${id} joined`)
-    return id
   }
 
   public removeSession(session: Session): void {
-    this.#sessions.splice(session.id, 1)
-    this.send({
-      type: ResponseType.REMOVED_PLAYER,
-      playerId: session.id
-    })
+    const id = this.#sessions.indexOf(session)
 
-    for (const s of this.#sessions) {
-      s.notifyRemovedSession(session)
+    console.assert(id >= 0)
+    this.log(`'${session.name}' leaving`)
+
+    this.#sessions.splice(id, 1)
+    if (this.#sessions.length > 0) {
+      this.send({ type: ResponseType.REMOVED_PLAYER, id })
+    } else {
+      this.delete()
     }
-
-    console.log(`[${this.#id}] session #${session.id} left`)
   }
 
   public send(res: Response): void {
@@ -88,10 +95,20 @@ export class Room {
       session.sendRaw(json)
     }
   }
+
+  public sendUpdatedProfile(session: Session, name: string): void {
+    const id = this.#sessions.indexOf(session)
+    console.assert(id >= 0)
+    this.send({ type: ResponseType.UPDATED_PROFILE, id, name })
+  }
+
+  private log(text: string): void {
+    console.log(`room ${this.#id} | ${text}`)
+  }
 }
 
-function generateId(size: number = 9): string {
-  const bytes = new Uint8Array(size)
+function generateId(): string {
+  const bytes = new Uint8Array(9)
   crypto.getRandomValues(bytes)
   return encode(bytes)
 }

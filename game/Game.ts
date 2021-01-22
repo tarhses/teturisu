@@ -46,6 +46,10 @@ export class Game {
     return this.#frame
   }
 
+  public get nextPiece(): number {
+    return this.#bag.peek(1)[0]
+  }
+
   public handleTick(): void {
     this.executeMoves()
     if (this.#counter === 0) {
