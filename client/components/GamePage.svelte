@@ -1,16 +1,28 @@
 <script lang="ts">
-  import type Board from '../Board'
-  import { getKeyDown as down, getKeyUp as up } from '../constants'
-  import type { Move } from '../../game/protocol';
+  import GameCanvas from './GameCanvas.svelte'
+  import type { Board } from '../Board'
+  import type { KeyHandler } from '../control'
+  import { down, up } from '../control'
+  import socket from '../socket'
+  import { RequestType } from '../../game/protocol'
 
   export let boards: Board[]
+  export let selfId: number
 
-  const handleKey = (handle: (code: string) => Move | null) => function(e: KeyboardEvent): void {
+  const handleKey = (handle: KeyHandler) => function(e: KeyboardEvent): void {
     const move = handle(e.code)
     if (move !== null) {
-      console.log(move)
+      const self = boards[selfId]
+      self.handleMove(move)
+      socket.send({
+        type: RequestType.SEND_INPUT,
+        inputs: [[move, self.frame]]
+      })
     }
   }
 </script>
 
 <svelte:window on:keydown={handleKey(down)} on:keyup={handleKey(up)} />
+{#each boards as board (board)}
+  <GameCanvas {board} width={100} />
+{/each}

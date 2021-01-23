@@ -1,8 +1,8 @@
 <style>
   .indicator {
-    width: 64px;
-    height: 10px;
-    margin: 32px;
+    width: 48px;
+    height: 6px;
+    margin: 16px;
     background-color: currentColor;
     border-radius: 6px;
     animation: spin 1s ease-in-out infinite;
@@ -16,4 +16,4 @@
 </style>
 
 <div class="indicator" />
-<h1>Loading</h1>
+<h1>Please wait</h1>

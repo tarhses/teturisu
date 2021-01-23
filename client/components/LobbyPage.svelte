@@ -16,7 +16,12 @@
     const name = e.detail.text
     if (name.length >= 3 && name.length <= 12) {
       socket.send({ type: RequestType.UPDATE_PROFILE, name })
-      localStorage.setItem('name', name)
+      try {
+        localStorage.setItem('name', name)
+      } catch {
+        // It might throw on exceeded quota or if disabled
+        // We'll politely ignore, as the gentlemen we are
+      }
     }
   }
 </script>
