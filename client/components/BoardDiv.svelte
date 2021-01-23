@@ -5,7 +5,7 @@
   import socket from '../socket'
   import { TICK_FRAMERATE } from '../../game/constants'
   import { RequestType } from '../../game/protocol';
-  import Pencil from './Pencil.svelte'
+  import Pencil from './Editable.svelte'
 
   export let board: Board
   export let width = 300

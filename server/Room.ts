@@ -3,7 +3,7 @@ import { Response, ResponseType } from '../game/protocol.ts'
 import { Server } from './Server.ts'
 import { Session } from './Session.ts'
 
-export const INPUTS_INTERVAL = 1000
+const INPUTS_INTERVAL = 1000
 
 export class Room {
   #id = generateId()

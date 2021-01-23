@@ -1,3 +1,6 @@
 import App from './App.svelte'
 
-export default new App({ target: document.body })
+export default new App({
+  target: document.body,
+  intro: true
+})
