@@ -21,8 +21,9 @@ ul {
 
 button {
   padding: 8px 24px;
+  color: inherit;
   background-color: inherit;
-  border: solid currentColor 1px;
+  border: solid currentColor 2px;
   border-radius: 8px;
   font: inherit;
   cursor: pointer;

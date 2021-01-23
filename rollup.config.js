@@ -17,7 +17,7 @@ export default {
 
   output: {
     name: 'app',
-		file: 'public/build/bundle.js',
+    file: 'public/build/bundle.js',
     format: 'iife',
     sourcemap: !production
   },
