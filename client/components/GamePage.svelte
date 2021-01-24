@@ -14,6 +14,7 @@
   const handleKey = (handle: KeyHandler) => function(e: KeyboardEvent): void {
     const move = handle(e.code)
     if (move !== null) {
+      e.preventDefault() // avoid scrolling, or any weird shortcuts
       self.handleMove(move)
       socket.send({
         type: RequestType.SEND_INPUT,
@@ -31,7 +32,10 @@
   }
 </style>
 
-<svelte:window on:keydown={handleKey(down)} on:keyup={handleKey(up)} />
+<svelte:window
+  on:keydown={handleKey(down)}
+  on:keyup={handleKey(up)}
+/>
 <div class="self">
   <GameCanvas board={self} width={300} host />
 </div>

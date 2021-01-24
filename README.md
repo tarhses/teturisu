@@ -44,11 +44,12 @@ server {
 
 The game tries to follow [the Tetris Guideline](https://tetris.wiki/Tetris_Guideline) as close as possible but it deviates on certain points:
 
-* The scoring and level systems mimic [the NES version](https://tetris.wiki/Tetris_(NES,_Nintendo)). Thus _T-spins_, _Back-to-Backs_, and _Combos_ are not rewarded.
-* The speed curve also imitates the NES version.
-* You can not [hold a piece](https://tetris.wiki/Hold_piece).
+* _T-spins_, _Back-to-Backs_, and _Combos_ are not rewarded.
+* The speed curve imitates the [the NES version](https://tetris.wiki/Tetris_(NES,_Nintendo)).
+* [Hard drops](https://tetris.wiki/Drop#Hard_drop) are not implemented.
+* You cannot [hold a piece](https://tetris.wiki/Hold_piece).
 * There is no [ghost piece](https://tetris.wiki/Ghost_piece).
-* [The garbage system](https://tetris.wiki/Garbage) is not implemented.
+* There is no [garbage system](https://tetris.wiki/Garbage).
 * The game uses [infinity](https://tetris.wiki/Infinity) to handle its lock delay. It actually is compliant to the Guideline, but another locking type could be preferable (well maybe, I dunno).
 
 These features might be implemented in the future though. Feel free to contribute :wink:!

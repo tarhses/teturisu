@@ -1,11 +1,16 @@
 export const GRID_WIDTH = 10
 export const GRID_HEIGHT = 23
 
-export const TICK_FRAMERATE = 1000 / 30
+export const TICK = 1000 / 30
 
-export const DROP_TICKS = 24
-export const SOFT_DROP_TICKS = 1
-export const LOCK_TICKS = 15 // 0.5s
+export const DROP_DELAYS = [24, 21, 19, 16, 14, 11, 9, 6, 4, 3]
+export const SOFT_DROP_DELAY = 1
+export const LOCK_DELAY = 15 // 0.5s
+
+export const POINTS_PER_LINES = [0, 100, 300, 500, 800]
+
+export const MAX_LEVEL = 9
+export const LINES_PER_LEVEL = 10
 
 export const PIECES = [
   [

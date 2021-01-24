@@ -3,7 +3,7 @@
   import type { Board } from '../Board'
   import { renderBoard } from '../render'
   import Piece from '../icons/Piece.svelte'
-  import { TICK_FRAMERATE } from '../../game/constants'
+  import { TICK } from '../../game/constants'
 
   export let board: Board
   export let width: number
@@ -11,9 +11,10 @@
 
   let canvas: HTMLCanvasElement
 
-  // These two are updated by the Game object itself, we must introduce local
+  // These three are updated by the Game object itself, we must introduce local
   // variables for Svelte to know when to change them.
   // This is kind of a hack, but it's worth it ;).
+  let level = board.level
   let score = board.score
   let next = board.nextPiece
 
@@ -26,9 +27,13 @@
     function handleFrame(tick: number): void {
       frame = requestAnimationFrame(handleFrame)
 
-      while (tick >= lastTick + TICK_FRAMERATE) {
+      while (tick >= lastTick + TICK) {
         board.handleTick()
-        lastTick += TICK_FRAMERATE
+        lastTick += TICK
+      }
+
+      if (level !== board.level) {
+        level = board.level
       }
 
       if (score !== board.score) {
@@ -67,6 +72,7 @@
   <div class="info">
     <div>
       <div>{board.name}</div>
+      <div>Level {level + 1}</div>
       <div>{score}</div>
     </div>
     {#if host}

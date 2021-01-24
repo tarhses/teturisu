@@ -1,39 +1,15 @@
 import { WebSocket } from './deps.ts'
-import { TICK_FRAMERATE } from '../game/constants.ts'
+import { TICK } from '../game/constants.ts'
 import { Input, RequestType, Request, Response } from '../game/protocol.ts'
 import { Server } from './Server.ts'
 import { Room } from './Room.ts'
-
-class Inputs {
-  #inputs: Input[] = []
-  #index = 0
-
-  public get all(): Input[] {
-    return this.#inputs
-  }
-
-  public get buffer(): Input[] {
-    const inputs = this.#inputs.slice(this.#index)
-    this.#index = this.#inputs.length
-    return inputs
-  }
-
-  public push(inputs: Input[]): void {
-    this.#inputs.push(...inputs)
-  }
-
-  public clear(): void {
-    this.#inputs = []
-    this.#index = 0
-  }
-}
 
 export class Session {
   #socket: WebSocket
   #server: Server
   #room: Room | null = null
   #name = 'Anonymous'
-  #inputs = new Inputs()
+  #inputs = new InputBuffer()
   #startTimestamp = 0
 
   public constructor(socket: WebSocket, server: Server) {
@@ -75,7 +51,7 @@ export class Session {
   public get frame(): number {
     if (this.#startTimestamp > 0) {
       const elapsed = performance.now() - this.#startTimestamp
-      return Math.floor(elapsed / TICK_FRAMERATE)
+      return Math.floor(elapsed / TICK)
     } else {
       return 0
     }
@@ -119,5 +95,29 @@ export class Session {
 
   public sendRaw(json: string): void {
     this.#socket.send(json).catch(err => console.error(`send error: ${err}`))
+  }
+}
+
+class InputBuffer {
+  #inputs: Input[] = []
+  #index = 0
+
+  public get all(): Input[] {
+    return this.#inputs
+  }
+
+  public get buffer(): Input[] {
+    const inputs = this.#inputs.slice(this.#index)
+    this.#index = this.#inputs.length
+    return inputs
+  }
+
+  public push(inputs: Input[]): void {
+    this.#inputs.push(...inputs)
+  }
+
+  public clear(): void {
+    this.#inputs = []
+    this.#index = 0
   }
 }

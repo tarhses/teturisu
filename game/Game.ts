@@ -1,5 +1,5 @@
 // @ts-ignore: file extension (deno compat)
-import { GRID_WIDTH, GRID_HEIGHT, DROP_TICKS, SOFT_DROP_TICKS, LOCK_TICKS } from './constants.ts'
+import { GRID_WIDTH, GRID_HEIGHT, DROP_DELAYS, SOFT_DROP_DELAY, LOCK_DELAY, POINTS_PER_LINES, MAX_LEVEL, LINES_PER_LEVEL } from './constants.ts'
 // @ts-ignore: file extension (deno compat)
 import { Move } from './protocol.ts'
 // @ts-ignore: file extension (deno compat)
@@ -31,6 +31,8 @@ export class Game {
   #piece: Piece
   #bag: Bag
   #state = State.DROPPING
+  #score = 0
+  #lines = 0
   #frame = 0
   #counter: number
   #buffer: Map<number, Move[]> = new Map()
@@ -40,6 +42,14 @@ export class Game {
     this.#bag = new Bag(seed)
     this.#piece = this.newPiece()
     this.#counter = this.counterLimit
+  }
+
+  public get score(): number {
+    return this.#score
+  }
+
+  public get level(): number {
+    return Math.min(MAX_LEVEL, Math.floor(this.#lines / LINES_PER_LEVEL))
   }
 
   public get frame(): number {
@@ -72,6 +82,9 @@ export class Game {
             type: EntryType.DROPPED,
             frame: this.#frame
           })
+          if (this.#state === State.SOFT_DROPPING) {
+            this.#score += 1
+          }
         } else {
           this.#history.push({
             type: EntryType.LOCKING,
@@ -84,11 +97,17 @@ export class Game {
 
       case State.LOCKING:
         this.#piece.draw()
+        const lines = this.#grid.eraseFullLines()
+
+        // Increase score first, then the level
+        this.#score += this.computePoints(lines.length)
+        this.#lines += lines.length
+
         this.#history.push({
           type: EntryType.LOCKED,
           frame: this.#frame,
           piece: this.#piece,
-          lines: this.#grid.eraseFullLines()
+          lines
         })
 
         this.#piece = this.newPiece()
@@ -189,6 +208,9 @@ export class Game {
     switch (entry.type) {
       case EntryType.DROPPED:
         this.#piece.shift(0, 1)
+        if (this.#state === State.SOFT_DROPPING) {
+          this.#score -= 1
+        }
         break
 
       case EntryType.LOCKING:
@@ -196,6 +218,10 @@ export class Game {
         break
 
       case EntryType.LOCKED:
+        // Decrease level first, then the score
+        this.#lines -= entry.lines.length
+        this.#score -= this.computePoints(entry.lines.length)
+
         this.#grid.resetFullLines(entry.lines)
 
         this.#bag.putBack(this.#piece.type)
@@ -228,9 +254,13 @@ export class Game {
 
   private get counterLimit(): number {
     switch (this.#state) {
-      case State.DROPPING: return DROP_TICKS - 1
-      case State.SOFT_DROPPING: return SOFT_DROP_TICKS - 1
-      case State.LOCKING: return LOCK_TICKS - 1
+      case State.DROPPING: return DROP_DELAYS[this.level] - 1
+      case State.SOFT_DROPPING: return SOFT_DROP_DELAY - 1
+      case State.LOCKING: return LOCK_DELAY - 1
     }
+  }
+
+  private computePoints(nLines: number): number {
+    return POINTS_PER_LINES[nLines] * (this.level + 1)
   }
 }

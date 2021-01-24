@@ -26,7 +26,11 @@ export class Board {
   }
 
   public get score(): number {
-    return 12630 // TODO
+    return this.#game.score
+  }
+
+  public get level(): number {
+    return this.#game.level
   }
 
   public get nextPiece(): number {
