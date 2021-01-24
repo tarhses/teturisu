@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { fade } from 'svelte/transition'
   import Editable from './Editable.svelte'
   import type { Board } from '../Board'
   import socket from '../socket'
@@ -26,21 +25,24 @@
   }
 </script>
 
-<h1>Lobby</h1>
-<ul>
-  {#each boards as board, id (board)}
-    <li transition:fade>
-      {#if id !== selfId}
-        {board.name}
-      {:else}
-        <Editable
-          message="Enter a new name (3 to 12 characters long):"
-          on:edit={setName}
-        >
-          <b>{board.name}</b>
-        </Editable>
-      {/if}
-    </li>
-  {/each}
-</ul>
-<button on:click={startGame}>Start</button>
+<div>
+  <h1>Room lobby</h1>
+  <p>Invite your friends by sharing this page's URL!</p>
+  <ul>
+    {#each boards as board, id (board)}
+      <li>
+        {#if id !== selfId}
+          {board.name}
+        {:else}
+          <Editable
+            message="Enter a new name (3 to 12 characters long):"
+            on:edit={setName}
+          >
+            <b>{board.name}</b>
+          </Editable>
+        {/if}
+      </li>
+    {/each}
+  </ul>
+  <button on:click={startGame}>Start</button>
+</div>

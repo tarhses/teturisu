@@ -40,7 +40,7 @@ server {
 }
 ```
 
-## _Tetris Guideline_
+## Tetris Guideline
 
 The game tries to follow [the Tetris Guideline](https://tetris.wiki/Tetris_Guideline) as close as possible but it deviates on certain points:
 
@@ -51,7 +51,7 @@ The game tries to follow [the Tetris Guideline](https://tetris.wiki/Tetris_Guide
 * [The garbage system](https://tetris.wiki/Garbage) is not implemented.
 * The game uses [infinity](https://tetris.wiki/Infinity) to handle its lock delay. It actually is compliant to the Guideline, but another locking type could be preferable (well maybe, I dunno).
 
-These features might be implemented in the future, though. Feel free to contribute anyway :wink:.
+These features might be implemented in the future though. Feel free to contribute :wink:!
 
 ## License
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { fade } from 'svelte/transition'
   import { Board } from './Board'
   import socket from './socket'
+  import Container from './components/Container.svelte'
   import LoadingPage from './components/LoadingPage.svelte'
   import LobbyPage from './components/LobbyPage.svelte'
   import GamePage from './components/GamePage.svelte'
@@ -69,20 +69,6 @@
   })
 </script>
 
-<style>
-  main {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-flow: column wrap;
-    justify-content: center;
-    align-items: center;
-  }
-</style>
-
-{#key page}
-  <main transition:fade>
-    <svelte:component this={page} {boards} {selfId} />
-  </main>
-{/key}
+<Container menu={page !== LoadingPage}>
+  <svelte:component this={page} {boards} {selfId} />
+</Container>
