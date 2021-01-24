@@ -8,8 +8,7 @@ export function renderBoard(board: Board, context: CanvasRenderingContext2D): vo
   // Compute dimensions
   const w = canvas.width
   const h = canvas.height
-  const pw = Math.floor(w / 10)
-  const ph = Math.floor(h / 20)
+  const s = Math.floor(w / 10)
 
   // Clear
   context.fillStyle = 'black'
@@ -18,6 +17,6 @@ export function renderBoard(board: Board, context: CanvasRenderingContext2D): vo
   // Draw pieces
   for (const [x, y, cell] of board.cells()) {
     context.fillStyle = PIECE_COLORS[cell]
-    context.fillRect(x * pw, (19 - y) * ph, pw, ph)
+    context.fillRect(x * s, h - (y + 1) * s, s, s)
   }
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte'
+  import Pencil from '../icons/Pencil.svelte'
 
   export let message: string
 
@@ -23,8 +24,5 @@
 
 <div class="editable" on:click={edit}>
   <slot />
-  <svg width="12pt" height="12pt" viewBox="0 0 8 8" transform="rotate(45)">
-    <polygon points="4,8 3,6 3,2.5 5,2.5 5,6" fill="currentColor" />
-    <rect x="3" y="0" width="2" height="2" fill="currentColor" />
-  </svg>
+  <Pencil size="12pt" />
 </div>

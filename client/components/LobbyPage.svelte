@@ -26,7 +26,7 @@
 </script>
 
 <div>
-  <h1>Room lobby</h1>
+  <h1>Room Lobby</h1>
   <p>Invite your friends by sharing this page's URL!</p>
   <ul>
     {#each boards as board, id (board)}

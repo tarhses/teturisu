@@ -9,10 +9,11 @@
   export let boards: Board[]
   export let selfId: number
 
+  const self = boards[selfId]
+
   const handleKey = (handle: KeyHandler) => function(e: KeyboardEvent): void {
     const move = handle(e.code)
     if (move !== null) {
-      const self = boards[selfId]
       self.handleMove(move)
       socket.send({
         type: RequestType.SEND_INPUT,
@@ -22,7 +23,22 @@
   }
 </script>
 
+<style>
+  .others {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+</style>
+
 <svelte:window on:keydown={handleKey(down)} on:keyup={handleKey(up)} />
-{#each boards as board (board)}
-  <GameCanvas {board} width={100} />
-{/each}
+<div class="self">
+  <GameCanvas board={self} width={300} host />
+</div>
+<div class="others">
+  {#each boards as board (board)}
+    {#if board !== self}
+      <GameCanvas {board} width={100} />
+    {/if}
+  {/each}
+</div>
