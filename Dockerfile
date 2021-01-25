@@ -15,4 +15,4 @@ COPY game game
 RUN deno cache server/main.ts
 
 # Run
-CMD ["run", "--allow-env", "--allow-net", "server/main.ts"]
+CMD ["run", "--allow-env", "--allow-net", "--allow-write=$DATABASE", "--allow-read=$DATABASE", "server/main.ts"]

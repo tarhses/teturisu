@@ -45,7 +45,7 @@ class Socket {
   }
 }
 
-// TODO: don't change port in production
+// TODO?: don't change port in production
 const host = location.origin.replace('http', 'ws').replace('8000', '8001')
 
 export default new Socket(`${host}/ws`)

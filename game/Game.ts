@@ -235,14 +235,14 @@ export class Game {
 
   public *cells(): Generator<[number, number, number], void, void> {
     for (const [x, y] of this.#piece.cells()) {
-      yield [x, y, this.#piece.cell]
+      yield [x, y, this.#piece.type]
     }
 
     for (let y = 0; y < GRID_HEIGHT; y++) {
       for (let x = 0; x < GRID_WIDTH; x++) {
         const cell = this.#grid.getCell(x, y)
         if (cell > 0) {
-          yield [x, y, cell]
+          yield [x, y, cell - 1]
         }
       }
     }
