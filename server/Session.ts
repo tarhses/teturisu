@@ -3,6 +3,7 @@ import { TICK } from '../game/constants.ts'
 import { Input, Request, RequestType, Response, ResponseType } from '../game/protocol.ts'
 import { Server } from './Server.ts'
 import { Room } from './Room.ts'
+import { Game } from '../game/Game.ts'
 
 export class Session {
   #socket: WebSocket
@@ -86,6 +87,12 @@ export class Session {
         }
         break
 
+      case RequestType.SUBMIT_SCORE:
+        if (this.#room !== null && this.#inputs.verify(this.#room.seed, req.score, req.frame)) {
+          this.#server.addScore(this.#name, req.score)
+        }
+        break
+
       case RequestType.GET_SCORES:
         this.send({
           type: ResponseType.GOT_SCORES,
@@ -120,11 +127,37 @@ class InputBuffer {
   }
 
   public push(inputs: Input[]): void {
-    this.#inputs.push(...inputs)
+    let frame = this.#inputs[this.#inputs.length - 1]?.[1] ?? 0
+    for (const input of inputs) {
+      if (input[1] >= frame) {
+        frame = input[1]
+        this.#inputs.push(input)
+      } else {
+        console.error(`input error: frame number decreasing (${input[1]} < ${frame})`)
+      }
+    }
   }
 
   public clear(): void {
     this.#inputs = []
     this.#index = 0
+  }
+
+  public verify(seed: number, score: number, frame: number): boolean {
+    const game = new Game(seed)
+    for (const [move, frame] of this.#inputs) {
+      game.handleMove(move, frame)
+    }
+
+    while (!game.over) {
+      game.handleTick()
+    }
+
+    if (game.score === score && game.frame === frame) {
+      return true
+    } else {
+      console.error(`score error: submitted = ${score}@${frame}, computed = ${game.score}@${game.frame}`)
+      return false
+    }
   }
 }

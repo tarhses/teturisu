@@ -1,29 +1,25 @@
 <script lang="ts">
+  import LoadingPage from './LoadingPage.svelte';
+  import LeaderboardPage from './LeaderboardPage.svelte'
+  import { page } from '../store'
   import socket from '../socket'
   import { RequestType } from '../../game/protocol'
 
   export let menu: boolean
 
-  const actions = [
-    {
-      caption: 'Create room',
-      execute(): void {
-        socket.send({ type: RequestType.CREATE_ROOM })
-      }
-    },
-    {
-      caption: 'Highscores',
-      execute(): void {
-        socket.send({ type: RequestType.GET_SCORES })
-      }
-    },
-    {
-      caption: 'About',
-      execute(): void {
-        // TODO
-      }
-    }
-  ]
+  function joinRoom(): void {
+    $page = LoadingPage
+    socket.send({ type: RequestType.JOIN_ROOM })
+  }
+
+  function createRoom(): void {
+    $page = LoadingPage
+    socket.send({ type: RequestType.CREATE_ROOM })
+  }
+
+  function getScores(): void {
+    $page = LeaderboardPage
+  }
 </script>
 
 <style>
@@ -51,10 +47,9 @@
 </style>
 
 <nav>
-  <h1 class="title">TETURISU!</h1>
+  <h1 class="title action" on:click={joinRoom}>TETURISU!</h1>
   {#if menu}
-    {#each actions as { caption, execute }}
-      <div class="action" on:click={execute}>{caption}</div>
-    {/each}
+    <div class="action" on:click={createRoom}>Create room</div>
+    <div class="action" on:click={getScores}>Highscores</div>
   {/if}
 </nav>

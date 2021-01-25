@@ -43,10 +43,18 @@ export function validateRequest(req: Request): void {
       }
       break
 
+    case RequestType.SUBMIT_SCORE:
+      if (!Number.isSafeInteger(req.score) || req.score < 0) {
+        throw new TypeError('invalid score (not a positive integer)')
+      } else if (!Number.isSafeInteger(req.frame) || req.frame < 0) {
+        throw new TypeError('invalid frame (not a positive integer)')
+      }
+      break
+
     case RequestType.GET_SCORES:
       if (typeof req.page !== 'undefined') {
-        if (typeof req.page !== 'number') {
-          throw new TypeError('invalid page (not a number)')
+        if (!Number.isSafeInteger(req.page)) {
+          throw new TypeError('invalid page (not an integer)')
         } else if (req.page < 0 || req.page >= 100) {
           throw new TypeError('invalid page (not in range 0-99)')
         }

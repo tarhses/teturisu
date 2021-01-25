@@ -28,6 +28,14 @@ export class Room {
     return this.#id
   }
 
+  public get seed(): number {
+    return this.#seed
+  }
+
+  public get nPlayers(): number {
+    return this.#sessions.length
+  }
+
   public start(): void {
     console.assert(!this.started)
     this.log('starting')

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, createEventDispatcher } from 'svelte'
   import type { Board } from '../Board'
   import { renderBoard } from '../render'
   import Piece from '../icons/Piece.svelte'
@@ -9,14 +9,17 @@
   export let width: number
   export let host = false
 
+  const dispatch = createEventDispatcher()
+
   let canvas: HTMLCanvasElement
 
-  // These three are updated by the Game object itself, we must introduce local
+  // These four are updated by the Game object itself, we must introduce local
   // variables for Svelte to know when to change them.
   // This is kind of a hack, but it's worth it ;).
   let level = board.level
   let score = board.score
   let next = board.nextPiece
+  let over = board.over
 
   onMount(() => {
     const context = canvas.getContext('2d') as CanvasRenderingContext2D
@@ -42,6 +45,11 @@
 
       if (next !== board.nextPiece) {
         next = board.nextPiece
+      }
+
+      if (over !== board.over) {
+        over = board.over
+        dispatch('over', { score, frame: board.frame })
       }
 
       renderBoard(board, context)

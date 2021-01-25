@@ -23,6 +23,7 @@ export class Leaderboard {
   }
 
   public addScore(name: string, score: number): void {
+    console.log(`new score: ${score} from ${name}`)
     this.#db.query(`
       INSERT INTO scores (name, score, timestamp)
       VALUES (?, ?, ?)

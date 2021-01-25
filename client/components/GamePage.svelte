@@ -22,6 +22,14 @@
       })
     }
   }
+
+  function handleGameOver(e: CustomEvent): void {
+    socket.send({
+      type: RequestType.SUBMIT_SCORE,
+      score: e.detail.score,
+      frame: e.detail.frame
+    })
+  }
 </script>
 
 <style>
@@ -37,7 +45,12 @@
   on:keyup={handleKey(up)}
 />
 <div class="self">
-  <GameCanvas board={self} width={300} host />
+  <GameCanvas
+    on:over={handleGameOver}
+    board={self}
+    width={300}
+    host
+  />
 </div>
 <div class="others">
   {#each boards as board (board)}

@@ -1,9 +1,13 @@
+// TODO: clients shouldn't submit scores, the server should detect game overs.
+// That implies that the server's architecture should be revised... yay
+
 export enum RequestType {
   CREATE_ROOM,
   JOIN_ROOM,
   START_GAME,
   SEND_INPUT,
   UPDATE_PROFILE,
+  SUBMIT_SCORE,
   GET_SCORES,
   COUNT // Keep last
 }
@@ -15,6 +19,7 @@ export enum ResponseType {
   STARTED_GAME,
   RECEIVED_INPUT,
   UPDATED_PROFILE,
+  SUBMITTED_SCORE,
   GOT_SCORES,
   COUNT // Keep last
 }
@@ -25,6 +30,7 @@ export type Request =
   { type: RequestType.START_GAME } |
   { type: RequestType.SEND_INPUT, inputs: Input[] } |
   { type: RequestType.UPDATE_PROFILE, name: string } |
+  { type: RequestType.SUBMIT_SCORE, score: number, frame: number } |
   { type: RequestType.GET_SCORES, page?: number }
 
 export type Response =

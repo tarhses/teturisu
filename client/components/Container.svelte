@@ -34,6 +34,6 @@
     <slot />
   </main>
   <footer>
-    <small>&copy; 2021, Pierre Luycx</small>
+    <small>&copy; 2021, Pierre Luycx &mdash; v0.0.1</small>
   </footer>
 </div>

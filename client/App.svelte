@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { Board } from './Board'
+  import { page } from './store'
   import socket from './socket'
   import Container from './components/Container.svelte'
   import LoadingPage from './components/LoadingPage.svelte'
@@ -9,7 +10,6 @@
   import type { Response } from '../game/protocol'
   import { RequestType, ResponseType } from '../game/protocol'
 
-  let page: any = LoadingPage
   let seed: number
   let boards: Board[] = []
   let selfId: number
@@ -28,7 +28,7 @@
     function handleResponse(res: Response): void {
       switch (res.type) {
         case ResponseType.JOINED_ROOM:
-          page = res.started ? GamePage : LobbyPage
+          $page = res.started ? GamePage : LobbyPage
           seed = res.seed
           boards = res.players.map(player => new Board(seed, player))
           selfId = boards.length - 1
@@ -51,7 +51,7 @@
           break
 
         case ResponseType.STARTED_GAME:
-          page = GamePage
+          $page = GamePage
           break
 
         case ResponseType.RECEIVED_INPUT:
@@ -65,10 +65,6 @@
         case ResponseType.UPDATED_PROFILE:
           boards[res.id].name = res.name
           break
-
-        case ResponseType.GOT_SCORES:
-          // TODO
-          break
       }
     }
 
@@ -78,5 +74,7 @@
 </script>
 
 <Container menu={page !== LoadingPage}>
-  <svelte:component this={page} {boards} {selfId} />
+  {#key $page}
+    <svelte:component this={$page} {boards} {selfId} />
+  {/key}
 </Container>
