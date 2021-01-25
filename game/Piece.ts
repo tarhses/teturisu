@@ -54,6 +54,20 @@ export class Piece {
     return iterCellPositions(this.#type, this.#x, this.#y, this.#r)
   }
 
+  public overlaps(): boolean {
+    return !this.couldMoveTo(this.#x, this.#y, this.#r)
+  }
+
+  public above(): boolean {
+    for (const [_, y] of this.cells()) {
+      if (y < 20) {
+        return false
+      }
+    }
+
+    return true
+  }
+
   public draw(): void {
     for (const [x, y] of this.cells()) {
       this.#grid.setCell(x, y, this.#type + 1)

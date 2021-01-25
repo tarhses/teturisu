@@ -9,10 +9,13 @@ import { Piece } from './Piece.ts'
 // @ts-ignore: file extension (deno compat)
 import { Bag } from './Bag.ts'
 
+// TODO: game logic works (I think)... but a bit of refactoring wouldn't harm :3
+
 const enum State {
   DROPPING,
   SOFT_DROPPING,
-  LOCKING
+  LOCKING,
+  OVER
 }
 
 const enum EntryType {
@@ -44,6 +47,10 @@ export class Game {
     this.#counter = this.counterLimit
   }
 
+  public get over(): boolean {
+    return this.#state === State.OVER
+  }
+
   public get score(): number {
     return this.#score
   }
@@ -61,15 +68,17 @@ export class Game {
   }
 
   public handleTick(): void {
-    this.executeMoves()
-    if (this.#counter === 0) {
-      this.update()
-      this.#counter = this.counterLimit
-    } else {
-      this.#counter -= 1
-    }
+    if (!this.over) {
+      this.executeMoves()
+      if (this.#counter === 0) {
+        this.update()
+        this.#counter = this.counterLimit
+      } else {
+        this.#counter -= 1
+      }
 
-    this.#frame += 1
+      this.#frame += 1
+    }
   }
 
   private update(): void {
@@ -96,6 +105,8 @@ export class Game {
         break
 
       case State.LOCKING:
+        let over = this.#piece.above()
+
         this.#piece.draw()
         const lines = this.#grid.eraseFullLines()
 
@@ -111,7 +122,14 @@ export class Game {
         })
 
         this.#piece = this.newPiece()
-        this.#state = State.DROPPING
+        if (this.#piece.overlaps()) {
+          over = true
+        }
+
+        this.#state = over ? State.OVER : State.DROPPING
+        break
+
+      case State.OVER:
         break
     }
   }
@@ -257,6 +275,7 @@ export class Game {
       case State.DROPPING: return DROP_DELAYS[this.level] - 1
       case State.SOFT_DROPPING: return SOFT_DROP_DELAY - 1
       case State.LOCKING: return LOCK_DELAY - 1
+      case State.OVER: return 0
     }
   }
 

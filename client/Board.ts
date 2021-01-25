@@ -1,6 +1,8 @@
 import type { Input, Move, Player } from '../game/protocol'
 import { Game } from '../game/Game'
 
+// TODO: refactoring! This class is useless, it only delegates
+
 export class Board {
   #name: string
   #game: Game
@@ -10,7 +12,7 @@ export class Board {
     this.#game = new Game(seed)
 
     this.handleInputs(player.inputs)
-    while (this.#game.frame < player.frame) {
+    while (!this.#game.over && this.#game.frame < player.frame) {
       this.handleTick()
     }
   }
@@ -21,6 +23,10 @@ export class Board {
 
   public set name(name: string) {
     this.#name = name
+  }
+
+  public get over(): boolean {
+    return this.#game.over
   }
 
   public get score(): number {
