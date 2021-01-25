@@ -8,15 +8,25 @@ To run the server, [Deno](https://deno.land) is required:
 
 ```sh
 export PORT=8080 # or 8001 by default
+
+# Use an in-memory score database
 deno run --allow-env --allow-net server/main.ts
+
+# Or specify a sqlite database
+export DATABASE='db.sqlite3'
+deno run --allow-env --allow-net --allow-read=db.sqlite3 --allow-write=db.sqlite3 server/main.ts
 ```
 
 The client interface uses [Svelte](https://svelte.dev) and can be built with [Rollup](https://rollupjs.org):
 
 ```sh
 npm install
-npm run build # make a production build into "public/",
-npm run dev # or directly serve static files (in dev mode!)
+
+# Make a production build into "public/"
+npm run build
+
+# Or directly serve static files (in dev mode!)
+npm run dev
 ```
 
 In production, you should serve the public directory and redirect every WebSocket request (the `/ws` route) to the Deno server. This can be achieved with a reverse-proxy. For instance, an Nginx configuration file could look like this:

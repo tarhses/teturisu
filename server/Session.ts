@@ -1,6 +1,6 @@
 import { WebSocket } from './deps.ts'
 import { TICK } from '../game/constants.ts'
-import { Input, RequestType, Request, Response } from '../game/protocol.ts'
+import { Input, Request, RequestType, Response, ResponseType } from '../game/protocol.ts'
 import { Server } from './Server.ts'
 import { Room } from './Room.ts'
 
@@ -84,6 +84,13 @@ export class Session {
         if (this.#room !== null) {
           this.#room.sendUpdatedProfile(this, req.name)
         }
+        break
+
+      case RequestType.GET_SCORES:
+        this.send({
+          type: ResponseType.GOT_SCORES,
+          scores: this.#server.getScores(req.page)
+        })
         break
     }
   }

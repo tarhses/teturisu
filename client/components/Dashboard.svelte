@@ -14,7 +14,7 @@
     {
       caption: 'Highscores',
       execute(): void {
-        // TODO
+        socket.send({ type: RequestType.GET_SCORES })
       }
     },
     {

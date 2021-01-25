@@ -13,12 +13,9 @@
 </script>
 
 <style>
-  .editable {
-    cursor: pointer;
-  }
-
   .editable:hover {
     text-decoration: underline;
+    cursor: pointer;
   }
 </style>
 

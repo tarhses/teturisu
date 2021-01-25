@@ -21,7 +21,7 @@ export function validateRequest(req: Request): void {
       break
 
     case RequestType.START_GAME:
-      // If the game already started, it will be ignored afterwards
+      // If the game has already started, this request will be ignored afterwards
       // Nothing to check thus
       break
 
@@ -40,6 +40,16 @@ export function validateRequest(req: Request): void {
         throw new TypeError('invalid name (not a string)')
       } else if (req.name.length < 3 || req.name.length > 12) {
         throw new TypeError('invalid name (not a 3-12 characters string)')
+      }
+      break
+
+    case RequestType.GET_SCORES:
+      if (typeof req.page !== 'undefined') {
+        if (typeof req.page !== 'number') {
+          throw new TypeError('invalid page (not a number)')
+        } else if (req.page < 0 || req.page >= 100) {
+          throw new TypeError('invalid page (not in range 0-99)')
+        }
       }
       break
 

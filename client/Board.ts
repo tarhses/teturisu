@@ -9,11 +9,9 @@ export class Board {
     this.#name = player.name
     this.#game = new Game(seed)
 
-    if (player !== undefined) {
-      this.handleInputs(player.inputs)
-      while (this.#game.frame < player.frame) {
-        this.handleTick()
-      }
+    this.handleInputs(player.inputs)
+    while (this.#game.frame < player.frame) {
+      this.handleTick()
     }
   }
 

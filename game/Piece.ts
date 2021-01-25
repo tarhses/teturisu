@@ -21,10 +21,6 @@ export class Piece {
     return this.#type
   }
 
-  public get cell(): number {
-    return this.#type + 1
-  }
-
   public shift(dx: number, dy: number): boolean {
     const x = this.#x + dx
     const y = this.#y + dy
@@ -60,7 +56,7 @@ export class Piece {
 
   public draw(): void {
     for (const [x, y] of this.cells()) {
-      this.#grid.setCell(x, y, this.cell)
+      this.#grid.setCell(x, y, this.#type + 1)
     }
   }
 

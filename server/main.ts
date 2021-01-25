@@ -5,8 +5,9 @@ import { Session } from './Session.ts'
 import { Request } from '../game/protocol.ts'
 
 const port = Deno.env.get('PORT') ?? '8001'
-const server = new Server()
+const database = Deno.env.get('DATABASE')
 
+const server = new Server(database)
 console.info(`listening on port ${port}`)
 
 for await (const req of serve(`:${port}`)) {

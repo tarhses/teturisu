@@ -1,6 +1,6 @@
 import type { Board } from './Board'
 
-const PIECE_COLORS = ['black', 'cyan', 'purple', 'orange', 'yellow', 'green', 'red', 'magenta']
+const PIECE_COLORS = ['cyan', 'purple', 'orange', 'yellow', 'green', 'red', 'magenta']
 
 export function renderBoard(board: Board, context: CanvasRenderingContext2D): void {
   const canvas = context.canvas

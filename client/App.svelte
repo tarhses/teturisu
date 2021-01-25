@@ -36,7 +36,11 @@
           break
 
         case ResponseType.ADDED_PLAYER:
-          boards = [...boards, new Board(seed, { name: res.name, frame: 0, inputs: [] })]
+          boards = [...boards, new Board(seed, {
+            name: res.name,
+            frame: 0,
+            inputs: []
+          })]
           break
 
         case ResponseType.REMOVED_PLAYER:
@@ -60,6 +64,10 @@
 
         case ResponseType.UPDATED_PROFILE:
           boards[res.id].name = res.name
+          break
+
+        case ResponseType.GOT_SCORES:
+          // TODO
           break
       }
     }
