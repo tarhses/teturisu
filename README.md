@@ -62,7 +62,7 @@ The game tries to follow [the Tetris Guideline](https://tetris.wiki/Tetris_Guide
 * There is no [garbage system](https://tetris.wiki/Garbage).
 * The game uses [infinity](https://tetris.wiki/Infinity) to handle its lock delay. It actually is compliant to the Guideline, but another locking type could be preferable (well maybe, I dunno).
 
-These features might be implemented in the future though. Feel free to contribute :wink:!
+These features might be implemented in the future though. See the [roadmap](/ROADMAP.md) and feel free to contribute :wink:!
 
 ## License
 
