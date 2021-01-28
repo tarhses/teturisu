@@ -1,14 +1,13 @@
 import { Room } from './Room.ts'
 import { Leaderboard } from './Leaderboard.ts'
-import { Score } from '../game/protocol.ts'
 
 export class Server {
   #rooms: Map<string, Room> = new Map()
-  #public: Room | null = null
-  #scores: Leaderboard
+  #public?: Room
+  #highscores: Leaderboard
 
-  public constructor(database?: string) {
-    this.#scores = new Leaderboard(database)
+  public constructor(highscores: Leaderboard) {
+    this.#highscores = highscores
   }
 
   public newRoom(): Room {
@@ -17,38 +16,24 @@ export class Server {
     return room
   }
 
-  public getRoom(id?: string): Room {
-    let room: Room | undefined
-    if (id !== undefined) {
-      room = this.#rooms.get(id)
+  public getPublicRoom(): Room {
+    if (this.#public === undefined || this.#public.full) {
+      this.#public = this.newRoom()
     }
 
-    if (room === undefined) {
-      if (this.#public === null || this.#public.nPlayers >= 32) {
-        this.#public = this.newRoom()
-        this.#public.start()
-      }
+    return this.#public
+  }
 
-      room = this.#public
-    }
-
-    return room
+  public getPrivateRoom(id: string): Room | undefined {
+    return this.#rooms.get(id)
   }
 
   public deleteRoom(id: string): void {
-    const success = this.#rooms.delete(id)
-    console.assert(success)
+    const deleted = this.#rooms.delete(id)
+    console.assert(deleted, 'deleting unregistered room')
 
-    if (this.#public !== null && id === this.#public.id) {
-      this.#public = null
+    if (id === this.#public?.id) {
+      this.#public = undefined
     }
-  }
-
-  public getScores(page?: number): Score[] {
-    return this.#scores.getScores(page)
-  }
-
-  public addScore(name: string, score: number): void {
-    this.#scores.addScore(name, score)
   }
 }

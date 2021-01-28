@@ -1,5 +1,9 @@
 // @ts-ignore: file extension (deno compat)
-import { GRID_WIDTH, GRID_HEIGHT } from './constants.ts'
+import { Piece, PieceType } from './Piece.ts'
+
+export const WIDTH = 10
+export const HEIGHT = 20
+const ACTUAL_HEIGHT = 25
 
 export interface Line {
   y: number
@@ -7,98 +11,69 @@ export interface Line {
 }
 
 export class Grid {
-  #cells: number[] = []
+  #cells: number[][] = []
 
   public constructor() {
-    for (let y = 0; y < GRID_HEIGHT; y++) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        this.#cells.push(0)
+    for (let y = 0; y < ACTUAL_HEIGHT; y++) {
+      this.#cells.push(newLine())
+    }
+  }
+
+  public *[Symbol.iterator](): Generator<[number, number, PieceType], void, void> {
+    for (let y = 0; y < ACTUAL_HEIGHT; y++) {
+      for (let x = 0; x < WIDTH; x++) {
+        const cell = this.#cells[y][x]
+        if (cell > 0) {
+          yield [x, y, cell - 1]
+        }
       }
     }
   }
 
-  public getCell(x: number, y: number): number {
-    const i = computeIndex(x, y)
-    return this.#cells[i]
+  public hasCell(x: number, y: number): boolean {
+    return this.#cells[y][x] > 0
   }
 
-  public setCell(x: number, y: number, cell: number): void {
-    const i = computeIndex(x, y)
-    this.#cells[i] = cell
-  }
-
-  public eraseFullLines(): Line[] {
-    const clearedLines: Line[] = []
-    for (let y = GRID_HEIGHT - 1; y >= 0; y--) {
-      if (this.isLineFull(y)) {
-        clearedLines.push(this.getLine(y))
-        this.clearLine(y)
-      }
-    }
-
-    return clearedLines
-  }
-
-  private isLineFull(y: number): boolean {
-    for (let x = 0; x < GRID_WIDTH; x++) {
-      if (this.getCell(x, y) === 0) {
-        return false
-      }
-    }
-
-    return true
-  }
-
-  private getLine(y: number): Line {
-    const i = y * GRID_WIDTH
-    const cells = this.#cells.slice(i, i + GRID_WIDTH)
-    return { y, cells }
-  }
-
-  private clearLine(y: number): void {
-    // Shift every line
-    for (; y + 1 < GRID_HEIGHT; y++) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        const cell = this.getCell(x, y + 1)
-        this.setCell(x, y, cell)
-      }
-    }
-
-    // Clear the top one
-    for (let x = 0; x < GRID_WIDTH; x++) {
-      this.setCell(x, y, 0)
+  public renderPiece(piece: Piece): void {
+    const cell = piece.type + 1
+    for (const [x, y] of piece) {
+      this.#cells[y][x] = cell
     }
   }
 
-  public resetFullLines(lines: Line[]): void {
-    lines.sort((a, b) => a.y - b.y)
+  public erasePiece(piece: Piece): void {
+    for (const [x, y] of piece) {
+      this.#cells[y][x] = 0
+    }
+  }
+
+  public renderLines(lines: Line[]): void {
     for (const line of lines) {
-      this.resetLine(line)
+      this.#cells.splice(line.y, 0, line.cells)
+      this.#cells.pop()
     }
   }
 
-  private resetLine(line: Line): void {
-    // Shift lines above
-    for (let y = GRID_HEIGHT - 1; y > line.y; y--) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        const cell = this.getCell(x, y - 1)
-        this.setCell(x, y, cell)
-      }
+  public eraseLines(): Line[] {
+    const cleared = this.#cells
+      .map((cells, y) => ({ y, cells }))
+      .filter(line => line.cells.every(cell => cell > 0))
+
+    for (let i = cleared.length - 1; i >= 0; i--) {
+      const line = cleared[i]
+      this.#cells.splice(line.y, 1)
+      this.#cells.push(newLine())
     }
 
-    // Put it back
-    for (const cell of line.cells) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        this.setCell(x, line.y, cell)
-      }
-    }
+    return cleared
   }
 }
 
-function computeIndex(x: number, y: number): number {
-  if (x < 0 || y < 0 || x >= GRID_WIDTH || y >= GRID_HEIGHT) {
-    throw new RangeError(`invalid grid index: (${x},${y})`)
-  } else {
-    return y * GRID_WIDTH + x
+function newLine(): number[] {
+  const line: number[] = []
+  for (let x = 0; x < WIDTH; x++) {
+    line.push(0)
   }
+
+  return line
 }

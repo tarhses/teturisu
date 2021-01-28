@@ -1,7 +1,9 @@
 // @ts-ignore: file extension (deno compat)
-import { GRID_WIDTH, GRID_HEIGHT, DROP_DELAYS, SOFT_DROP_DELAY, LOCK_DELAY, POINTS_PER_LINES, MAX_LEVEL, LINES_PER_LEVEL } from './constants.ts'
-// @ts-ignore: file extension (deno compat)
 import { Move } from './protocol.ts'
+// @ts-ignore: file extension (deno compat)
+import { Clock } from './Clock.ts'
+// @ts-ignore: file extension (deno compat)
+import { Score } from './Score.ts'
 // @ts-ignore: file extension (deno compat)
 import { Grid, Line } from './Grid.ts'
 // @ts-ignore: file extension (deno compat)
@@ -9,277 +11,178 @@ import { Piece } from './Piece.ts'
 // @ts-ignore: file extension (deno compat)
 import { Bag } from './Bag.ts'
 
-// TODO: game logic works (I think)... but a bit of refactoring wouldn't harm :3
-
 const enum State {
   DROPPING,
   SOFT_DROPPING,
   LOCKING,
-  OVER
+  OVER,
 }
-
-const enum EntryType {
-  DROPPED,
-  LOCKING,
-  LOCKED
-}
-
-type Entry =
-  { type: EntryType.DROPPED, frame: number } |
-  { type: EntryType.LOCKING, frame: number, soft: boolean } |
-  { type: EntryType.LOCKED, frame: number, piece: Piece, lines: Line[] }
 
 export class Game {
-  #grid = new Grid()
+  #state: State = State.DROPPING
+  #clock: Clock = new Clock()
+  #score: Score = new Score()
+  #grid: Grid = new Grid()
   #piece: Piece
   #bag: Bag
-  #state = State.DROPPING
-  #score = 0
-  #lines = 0
-  #frame = 0
-  #counter: number
-  #buffer: Map<number, Move[]> = new Map()
-  #history: Entry[] = []
 
   public constructor(seed?: number) {
     this.#bag = new Bag(seed)
-    this.#piece = this.newPiece()
-    this.#counter = this.counterLimit
+    this.#piece = new Piece(this.#grid, this.#bag.take())
+    this.#clock.timer = this.#score.dropFrames
   }
 
   public get over(): boolean {
     return this.#state === State.OVER
   }
 
-  public get score(): number {
-    return this.#score
-  }
-
-  public get level(): number {
-    return Math.min(MAX_LEVEL, Math.floor(this.#lines / LINES_PER_LEVEL))
-  }
-
   public get frame(): number {
-    return this.#frame
+    return this.#clock.frame
   }
 
-  public get nextPiece(): number {
-    return this.#bag.peek(1)[0]
-  }
-
-  public handleTick(): void {
+  public handleFrame(): void {
     if (!this.over) {
-      this.executeMoves()
-      if (this.#counter === 0) {
-        this.update()
-        this.#counter = this.counterLimit
-      } else {
-        this.#counter -= 1
+      if (this.#clock.tick()) {
+        this.handleTick()
+        this.#clock.timer = this.timer
       }
-
-      this.#frame += 1
     }
   }
 
-  private update(): void {
+  private handleTick(): void {
     switch (this.#state) {
-      case State.DROPPING:
-      case State.SOFT_DROPPING:
-        const success = this.#piece.shift(0, -1)
-        if (success) {
-          this.#history.push({
-            type: EntryType.DROPPED,
-            frame: this.#frame
-          })
-          if (this.#state === State.SOFT_DROPPING) {
-            this.#score += 1
-          }
-        } else {
-          this.#history.push({
-            type: EntryType.LOCKING,
-            frame: this.#frame,
-            soft: this.#state === State.SOFT_DROPPING
-          })
-          this.#state = State.LOCKING
-        }
-        break
-
-      case State.LOCKING:
-        let over = this.#piece.above()
-
-        this.#piece.draw()
-        const lines = this.#grid.eraseFullLines()
-
-        // Increase score first, then the level
-        this.#score += this.computePoints(lines.length)
-        this.#lines += lines.length
-
-        this.#history.push({
-          type: EntryType.LOCKED,
-          frame: this.#frame,
-          piece: this.#piece,
-          lines
-        })
-
-        this.#piece = this.newPiece()
-        if (this.#piece.overlaps()) {
-          over = true
-        }
-
-        this.#state = over ? State.OVER : State.DROPPING
-        break
-
-      case State.OVER:
-        break
+      case State.DROPPING: return this.handleDrop(false)
+      case State.SOFT_DROPPING: return this.handleDrop(true)
+      case State.LOCKING: return this.handleLock()
     }
   }
 
-  private executeMoves(): void {
-    const moves = this.#buffer.get(this.#frame)
-    if (moves !== undefined) {
-      this.#buffer.delete(this.#frame)
-      for (const move of moves) {
-        const success = this.executeMove(move)
-        if (success && this.#state === State.LOCKING) {
-          this.#state = State.DROPPING
+  private handleDrop(soft: boolean): void {
+    const distance = this.#score.dropDistance
+    for (let i = 0; i < distance; i++) {
+      if (this.#piece.shift(0, -1)) {
+        this.recordDrop()
+        if (soft) {
+          this.#score.registerSoftDrop()
         }
-      }
-    }
-  }
-
-  private executeMove(move: Move): boolean {
-    switch (move) {
-      case Move.LEFT_SHIFT:
-        return this.#piece.shift(-1, 0)
-
-      case Move.RIGHT_SHIFT:
-        return this.#piece.shift(1, 0)
-
-      case Move.LEFT_ROTATION:
-        return this.#piece.rotate(-1)
-
-      case Move.RIGHT_ROTATION:
-        return this.#piece.rotate(1)
-
-      case Move.HARD_DROP:
-        return false // TODO
-
-      case Move.START_SOFT_DROP:
-        if (this.#state === State.DROPPING) {
-          this.#state = State.SOFT_DROPPING
-          this.#counter = this.counterLimit
-          return true
-        } else {
-          return false
-        }
-
-      case Move.STOP_SOFT_DROP:
-        if (this.#state === State.SOFT_DROPPING) {
-          this.#state = State.DROPPING
-          return true
-        } else {
-          return false
-        }
-
-      default:
-        return false
-    }
-  }
-
-  public handleMove(move: Move, frame: number = this.#frame): void {
-    if (frame < this.#frame) {
-      this.revertEntries(frame)
-    }
-
-    let moves = this.#buffer.get(frame)
-    if (moves === undefined) {
-      moves = []
-      this.#buffer.set(frame, moves)
-    }
-
-    moves.push(move)
-  }
-
-  private revertEntries(targetFrame: number): void {
-    let keyFrame = 0
-    if (this.#history.length > 0) {
-      for (let i = this.#history.length - 1; i >= 0; i--) {
-        const entry = this.#history[i]
-        if (entry.frame >= targetFrame) {
-          this.revertEntry(entry)
-        } else {
-          keyFrame = entry.frame + 1
-          this.#history.splice(i + 1)
-          break
-        }
-      }
-    }
-
-    this.#frame = keyFrame
-    this.#counter = this.counterLimit
-
-    console.assert(keyFrame <= targetFrame, 'target frame > key frame')
-    console.log(`rollback to ${keyFrame} (target: ${targetFrame})`)
-  }
-
-  private revertEntry(entry: Entry): void {
-    switch (entry.type) {
-      case EntryType.DROPPED:
-        this.#piece.shift(0, 1)
-        if (this.#state === State.SOFT_DROPPING) {
-          this.#score -= 1
-        }
-        break
-
-      case EntryType.LOCKING:
-        this.#state = entry.soft ? State.SOFT_DROPPING : State.DROPPING
-        break
-
-      case EntryType.LOCKED:
-        // Decrease level first, then the score
-        this.#lines -= entry.lines.length
-        this.#score -= this.computePoints(entry.lines.length)
-
-        this.#grid.resetFullLines(entry.lines)
-
-        this.#bag.putBack(this.#piece.type)
-        this.#piece = entry.piece
-        this.#piece.erase()
-
+      } else {
+        this.recordGround(soft)
         this.#state = State.LOCKING
         break
-    }
-  }
-
-  public *cells(): Generator<[number, number, number], void, void> {
-    for (const [x, y] of this.#piece.cells()) {
-      yield [x, y, this.#piece.type]
-    }
-
-    for (let y = 0; y < GRID_HEIGHT; y++) {
-      for (let x = 0; x < GRID_WIDTH; x++) {
-        const cell = this.#grid.getCell(x, y)
-        if (cell > 0) {
-          yield [x, y, cell - 1]
-        }
       }
     }
   }
 
-  private newPiece(): Piece {
-    return new Piece(this.#grid, this.#bag.take())
+  private handleLock(): void {
+    this.#piece.render()
+    let over = !this.#piece.visible
+
+    const lines = this.#grid.eraseLines()
+    this.#score.registerLines(lines.length)
+    this.recordLock(this.#piece, lines)
+
+    this.#piece = new Piece(this.#grid, this.#bag.take())
+    if (this.#piece.overlapping) {
+      over = true
+    }
+
+    this.#state = over ? State.OVER : State.DROPPING
   }
 
-  private get counterLimit(): number {
+  private get timer(): number {
     switch (this.#state) {
-      case State.DROPPING: return DROP_DELAYS[this.level] - 1
-      case State.SOFT_DROPPING: return SOFT_DROP_DELAY - 1
-      case State.LOCKING: return LOCK_DELAY - 1
+      case State.DROPPING: return this.#score.dropFrames
+      case State.SOFT_DROPPING: return this.#score.softDropFrames
+      case State.LOCKING: return this.#score.lockFrames
       case State.OVER: return 0
     }
   }
 
-  private computePoints(nLines: number): number {
-    return POINTS_PER_LINES[nLines] * (this.level + 1)
+  public handleMove(move: Move): boolean {
+    if (this.over) {
+      return false
+    } else {
+      switch (move) {
+        case Move.LEFT_SHIFT: return this.handleShift(-1)
+        case Move.RIGHT_SHIFT: return this.handleShift(1)
+        case Move.LEFT_ROTATION: return this.handleRotation(-1)
+        case Move.RIGHT_ROTATION: return this.handleRotation(1)
+        case Move.HARD_DROP: return this.handleHardDrop()
+        case Move.SOFT_DROP_START: return this.handleSoftDropStart()
+        case Move.SOFT_DROP_END: return this.handleSoftDropEnd()
+        default: throw new RangeError()
+      }
+    }
+  }
+
+  private handleShift(dx: number): boolean {
+    return this.handlePieceMove(this.#piece.shift(dx, 0))
+  }
+
+  private handleRotation(dr: number): boolean {
+    return this.handlePieceMove(this.#piece.rotate(dr))
+  }
+
+  private handlePieceMove(success: boolean): boolean {
+    if (success && this.#state === State.LOCKING) {
+      this.#state = State.DROPPING
+      this.#clock.timer = this.#score.dropFrames
+    }
+
+    return success
+  }
+
+  private handleHardDrop(): boolean {
+    return false // TODO
+  }
+
+  private handleSoftDropStart(): boolean {
+    if (this.#state === State.DROPPING) {
+      this.#state = State.SOFT_DROPPING
+      this.#clock.timer = this.#score.softDropFrames
+      return true
+    } else {
+      return false
+    }
+  }
+
+  private handleSoftDropEnd(): boolean {
+    if (this.#state === State.SOFT_DROPPING) {
+      this.#state = State.DROPPING
+      return true
+    } else {
+      return false
+    }
+  }
+
+  protected recordDrop(): void {}
+
+  protected recordGround(soft: boolean): void {}
+
+  protected recordLock(piece: Piece, lines: Line[]): void {}
+
+  protected revertFrame(frame: number): void {
+    this.#clock.frame = frame
+    this.#clock.timer = this.timer
+  }
+
+  protected revertDrop(): void {
+    this.#piece.shift(0, 1)
+    if (this.#state === State.SOFT_DROPPING) {
+      this.#score.unregisterSoftDrop()
+    }
+  }
+
+  protected revertGround(soft: boolean): void {
+    this.#state = soft ? State.SOFT_DROPPING : State.DROPPING
+  }
+
+  protected revertLock(piece: Piece, lines: Line[]): void {
+    this.#score.unregisterLines(lines.length)
+    this.#grid.renderLines(lines)
+    this.#bag.putBack(this.#piece.type)
+    this.#piece = piece
+    piece.erase()
+    this.#state = State.LOCKING
   }
 }

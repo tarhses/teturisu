@@ -1,16 +1,20 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
   "compilerOptions": {
-    "target": "es6",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "isolatedModules": true,
+    "module": "esnext",
     "strict": true,
-    "types": ["svelte", "jest"]
+    "target": "es6",
+    "types": ["svelte"]
   },
   "include": [
-    "client/**/*",
-    "game/**/*"
+    "game/**/*",
+    "client/**/*"
   ],
   "exclude": [
-    "node_modules",
     "**/*.test.ts"
   ]
 }

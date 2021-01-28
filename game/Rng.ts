@@ -1,29 +1,22 @@
 // Code adapted from 'prando' (https://github.com/zeh/prando)
 
-// Minimum and maximum for a signed 32 bits integer
 const MIN = -2147483648
 const MAX = 2147483647
 
 export class Rng {
-  #seed: number
   #value: number
 
-  public constructor(seed: number = randomInt()) {
-    this.#seed = safe(seed)
-    this.#value = this.#seed
+  public constructor(seed: number = random()) {
+    this.#value = safe(seed)
   }
 
-  public next(min: number = 0, max: number = 1): number {
-    this.#value = xorshift(this.#value)
-    return map(this.#value, MIN, MAX, min, max)
-  }
-
-  public nextInt(min: number, max: number): number {
-    return Math.floor(this.next(min, max + 1))
+  public next(min: number, max: number): number {
+    this.#value = shift(this.#value)
+    return Math.floor(map(this.#value, MIN, MAX, min, max + 1))
   }
 }
 
-function randomInt(): number {
+function random(): number {
   return MIN + Math.floor((MAX - MIN) * Math.random())
 }
 
@@ -31,7 +24,7 @@ function safe(seed: number) {
   return seed === 0 ? 1 : seed
 }
 
-function xorshift(val: number) {
+function shift(val: number) {
   // Based on George Marsaglia's work: http://www.jstatsoft.org/v08/i14/paper
   val ^= val << 13
   val ^= val >> 17

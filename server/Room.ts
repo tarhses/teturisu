@@ -1,27 +1,20 @@
-import { encode } from './deps.ts'
-import { Response, ResponseType } from '../game/protocol.ts'
 import { Server } from './Server.ts'
 import { Session } from './Session.ts'
+import { Res, ResType, Player } from '../game/protocol.ts'
+import { encode } from './deps.ts'
 
-const INPUTS_INTERVAL = 1000
+const MAX_SESSIONS = 33
+const INPUTS_PERIOD = 1000
 
 export class Room {
-  #id = generateId()
+  #id: string = generateId()
   #server: Server
   #sessions: Session[] = []
-  #seed = generateSeed()
-  #startTimestamp = 0
-  #inputsInterval?: number
+  #seed: number = generateSeed()
+  #inputsInterval?: any
 
   public constructor(server: Server) {
     this.#server = server
-    this.log('created')
-  }
-
-  public delete(): void {
-    clearInterval(this.#inputsInterval)
-    this.#server.deleteRoom(this.#id)
-    this.log('deleted')
   }
 
   public get id(): string {
@@ -32,86 +25,85 @@ export class Room {
     return this.#seed
   }
 
-  public get nPlayers(): number {
-    return this.#sessions.length
-  }
-
-  public start(): void {
-    console.assert(!this.started)
-    this.log('starting')
-
-    this.send({ type: ResponseType.STARTED_GAME })
-
-    this.#startTimestamp = performance.now()
-    for (const session of this.#sessions) {
-      session.start(this.#startTimestamp)
-    }
-
-    this.#inputsInterval = setInterval(() => {
-      const inputs = this.#sessions.map(s => s.bufferedInputs)
-      if (inputs.some(i => i.length > 0)) {
-        this.send({ type: ResponseType.RECEIVED_INPUT, inputs })
-      }
-    }, INPUTS_INTERVAL)
-  }
-
   public get started(): boolean {
-    return this.#startTimestamp > 0
+    return this.#inputsInterval !== undefined
   }
 
-  public addSession(session: Session): void {
-    console.assert(!this.#sessions.includes(session))
-    this.log(`'${session.name}' joining`)
+  public get full(): boolean {
+    return this.#sessions.length >= MAX_SESSIONS
+  }
 
-    this.send({ type: ResponseType.ADDED_PLAYER, name: session.name })
+  public get players(): Player[] {
+    return this.#sessions.map(session => ({
+      name: session.name,
+      frame: session.frame,
+      inputs: session.inputs,
+    }))
+  }
 
+  public add(session: Session): number {
+    console.assert(!this.full, 'joining a full room')
+
+    this.broadcast({
+      type: ResType.ADDED_PLAYER,
+      name: session.name,
+    })
+
+    const id = this.#sessions.length
     this.#sessions.push(session)
+
     if (this.started) {
       session.start()
     }
 
-    session.send({
-      type: ResponseType.JOINED_ROOM,
-      id: this.#id,
-      seed: this.#seed,
-      started: this.started,
-      players: this.#sessions.map(s => ({
-        name: s.name,
-        frame: s.frame,
-        inputs: s.inputs
-      }))
-    })
+    return id
   }
 
-  public removeSession(session: Session): void {
-    const id = this.#sessions.indexOf(session)
+  public remove(session: Session): void {
+    this.#sessions.splice(session.id, 1)
+    for (const other of this.#sessions) {
+      if (other.id > session.id) {
+        other.id -= 1
+      }
+    }
 
-    console.assert(id >= 0)
-    this.log(`'${session.name}' leaving`)
-
-    this.#sessions.splice(id, 1)
     if (this.#sessions.length > 0) {
-      this.send({ type: ResponseType.REMOVED_PLAYER, id })
+      this.broadcast({
+        type: ResType.REMOVED_PLAYER,
+        id: session.id,
+      })
     } else {
-      this.delete()
+      clearInterval(this.#inputsInterval)
+      this.#server.deleteRoom(this.#id)
     }
   }
 
-  public send(res: Response): void {
+  public start(): void {
+    console.assert(!this.started, 'starting already started room')
+
+    const now = performance.now()
+    for (const session of this.#sessions) {
+      session.startTimestamp = now
+    }
+
+    this.broadcast({ type: ResType.STARTED_GAME })
+
+    this.#inputsInterval = setInterval(() => {
+      const buffers = this.#sessions.map(session => session.bufferedInputs)
+      if (buffers.some(buffer => buffer.length > 0)) {
+        this.broadcast({
+          type: ResType.SEND_INPUTS,
+          inputs: buffers,
+        })
+      }
+    }, INPUTS_PERIOD)
+  }
+
+  public broadcast(res: Res): void {
     const json = JSON.stringify(res)
     for (const session of this.#sessions) {
-      session.sendRaw(json)
+      session.sender.sendJson(json)
     }
-  }
-
-  public sendUpdatedProfile(session: Session, name: string): void {
-    const id = this.#sessions.indexOf(session)
-    console.assert(id >= 0)
-    this.send({ type: ResponseType.UPDATED_PROFILE, id, name })
-  }
-
-  private log(text: string): void {
-    console.log(`room ${this.#id} | ${text}`)
   }
 }
 

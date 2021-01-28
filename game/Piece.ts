@@ -1,133 +1,183 @@
 // @ts-ignore: file extension (deno compat)
-import { GRID_HEIGHT, GRID_WIDTH, PIECES, WALL_KICKS_CLOCKWISE_I, WALL_KICKS_CLOCKWISE_JLSTZ, WALL_KICKS_COUNTERCLOCKWISE_I, WALL_KICKS_COUNTERCLOCKWISE_JLSTZ, WALL_KICKS_O } from './constants.ts'
-// @ts-ignore: file extension (deno compat)
-import { Grid } from './Grid.ts'
+import { Grid, WIDTH, HEIGHT } from './Grid.ts'
+
+export enum PieceType { I, J, L, O, S, T, Z }
+
+type Model = number[][]
+type WallKicks = [number, number][]
 
 export class Piece {
   #grid: Grid
-  #type: number
+  #type: PieceType
   #x: number
-  #y = 22
-  #r = 0
+  #y: number = 22
+  #r: number = 0
 
-  public constructor(grid: Grid, type: number) {
-    const model = PIECES[type]
+  public constructor(grid: Grid, type: PieceType) {
     this.#grid = grid
     this.#type = type
-    this.#x = Math.floor((GRID_WIDTH - model.length) / 2)
+    this.#x = Math.floor((WIDTH - this.model.length) / 2)
   }
 
-  public get type(): number {
+  public get type(): PieceType {
     return this.#type
   }
 
-  public shift(dx: number, dy: number): boolean {
-    const x = this.#x + dx
-    const y = this.#y + dy
-    if (this.couldMoveTo(x, y, this.#r)) {
-      this.#x = x
-      this.#y = y
-      return true
-    } else {
-      return false
+  private get model(): Model {
+    return MODELS[this.#type]
+  }
+
+  public *[Symbol.iterator](): Generator<[number, number], void, void> {
+    for (const [x, y] of iterModelCells(this.model, this.#r)) {
+      yield [this.#x + x, this.#y - y]
     }
   }
 
-  public rotate(dr: number): boolean {
-    // We use a binary AND to stay within [0..3]
-    const r = (this.#r + dr) & 3
+  public get visible(): boolean {
+    return Array.from(this).some(([_, y]) => y < HEIGHT)
+  }
 
-    const wallKicks = getWallKicks(this.#type, dr >= 0)[this.#r]
-    for (const [dx, dy] of wallKicks) {
-      if (this.couldMoveTo(this.#x + dx, this.#y + dy, r)) {
-        this.#x += dx
-        this.#y += dy
-        this.#r = r
+  public get overlapping(): boolean {
+    return Array.from(this).some(([x, y]) => this.#grid.hasCell(x, y))
+  }
+
+  public shift(dx: number, dy: number): boolean {
+    this.#x += dx
+    this.#y += dy
+
+    const success = !this.overlapping
+    if (!success) {
+      this.#x -= dx
+      this.#y -= dy
+    }
+
+    return success
+  }
+
+  public rotate(dr: number): boolean {
+    const r = this.#r
+    this.#r = (this.#r + dr) & 3 // binary AND to stay within bounds
+
+    const kicks = getWallKicks(this.#type, dr > 0)[this.#r]
+    for (const [dx, dy] of kicks) {
+      if (this.shift(dx, dy)) {
         return true
       }
     }
 
+    this.#r = r
     return false
   }
 
-  public cells(): Generator<[number, number], void, void> {
-    return iterCellPositions(this.#type, this.#x, this.#y, this.#r)
-  }
-
-  public overlaps(): boolean {
-    return !this.couldMoveTo(this.#x, this.#y, this.#r)
-  }
-
-  public above(): boolean {
-    for (const [_, y] of this.cells()) {
-      if (y < 20) {
-        return false
-      }
-    }
-
-    return true
-  }
-
-  public draw(): void {
-    for (const [x, y] of this.cells()) {
-      this.#grid.setCell(x, y, this.#type + 1)
-    }
+  public render(): void {
+    this.#grid.renderPiece(this)
   }
 
   public erase(): void {
-    for (const [x, y] of this.cells()) {
-      this.#grid.setCell(x, y, 0)
-    }
-  }
-
-  private couldMoveTo(newX: number, newY: number, newR: number): boolean {
-    for (const [x, y] of iterCellPositions(this.#type, newX, newY, newR)) {
-      if (!inBounds(x, y) || this.#grid.getCell(x, y) > 0) {
-        return false
-      }
-    }
-
-    return true
+    this.#grid.erasePiece(this)
   }
 }
 
-function inBounds(x: number, y: number): boolean {
-  return x >= 0 && y >= 0 && x < GRID_WIDTH && y < GRID_HEIGHT
-}
-
-function *iterCellPositions(type: number, x: number, y: number, r: number): Generator<[number, number], void, void> {
-  const model = PIECES[type]
+function *iterModelCells(model: Model, r: number): Generator<[number, number], void, void> {
   const size = model.length
-  for (let dy = 0; dy < size; dy++) {
-    for (let dx = 0; dx < size; dx++) {
-      if (modelHasCellAt(model, dx, dy, r)) {
-        yield [x + dx, y - dy]
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const cell = getModelCell(model, x, y, r)
+      if (cell > 0) {
+        yield [x, y]
       }
     }
   }
 }
 
-function modelHasCellAt(model: number[][], x: number, y: number, r: number): boolean {
+function getModelCell(model: Model, x: number, y: number, r: number): number {
   const last = model.length - 1
   switch (r) {
-    case 0: return model[y][x] > 0
-    case 1: return model[last - x][y] > 0
-    case 2: return model[last - y][last - x] > 0
-    case 3: return model[x][last - y] > 0
-    default: throw RangeError(`invalid rotation: ${r}`)
+    case 0: return model[y][x]
+    case 1: return model[last - x][y]
+    case 2: return model[last - y][last - x]
+    case 3: return model[x][last - y]
+    default: throw new RangeError()
   }
 }
 
-function getWallKicks(type: number, clockwise: boolean): number[][][] {
-  if (type === 0) {
-    return clockwise
-      ? WALL_KICKS_CLOCKWISE_I
-      : WALL_KICKS_COUNTERCLOCKWISE_I
-  } else if (type === 3) {
-    return WALL_KICKS_O
-  } else {
-    return clockwise
-      ? WALL_KICKS_CLOCKWISE_JLSTZ
-      : WALL_KICKS_COUNTERCLOCKWISE_JLSTZ
+function getWallKicks(type: number, clockwise: boolean): WallKicks[] {
+  switch (type) {
+    case PieceType.I: return clockwise ? KICKS_CLOCKWISE_I : KICKS_COUNTERCLOCKWISE_I
+    case PieceType.O: return KICKS_O
+    default: return clockwise ? KICKS_CLOCKWISE_JLSTZ : KICKS_COUNTERCLOCKWISE_JLSTZ
   }
 }
+
+const MODELS: Model[] = [
+  [
+    [0, 0, 0, 0],
+    [1, 1, 1, 1],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ],
+  [
+    [2, 0, 0],
+    [2, 2, 2],
+    [0, 0, 0],
+  ],
+  [
+    [0, 0, 3],
+    [3, 3, 3],
+    [0, 0, 0],
+  ],
+  [
+    [4, 4],
+    [4, 4],
+  ],
+  [
+    [0, 5, 5],
+    [5, 5, 0],
+    [0, 0, 0],
+  ],
+  [
+    [0, 6, 0],
+    [6, 6, 6],
+    [0, 0, 0],
+  ],
+  [
+    [7, 7, 0],
+    [0, 7, 7],
+    [0, 0, 0],
+  ],
+]
+
+const KICKS_CLOCKWISE_I: WallKicks[] = [
+  [[ 0, 0], [-2, 0], [ 1, 0], [-2,-1], [ 1, 2]],
+  [[ 0, 0], [-1, 0], [ 2, 0], [-1, 2], [ 2,-1]],
+  [[ 0, 0], [ 2, 0], [-1, 0], [ 2, 1], [-1,-2]],
+  [[ 0, 0], [ 1, 0], [-2, 0], [ 1,-2], [-2, 1]],
+]
+
+const KICKS_COUNTERCLOCKWISE_I: WallKicks[] = [
+  [[ 0, 0], [-1, 0], [ 2, 0], [-1, 2], [ 2,-1]],
+  [[ 0, 0], [-2, 0], [ 1, 0], [-2,-1], [ 1, 2]],
+  [[ 0, 0], [ 1, 0], [-2, 0], [ 1,-2], [-2, 1]],
+  [[ 0, 0], [ 2, 0], [-1, 0], [ 2, 1], [-1,-2]],
+]
+
+const KICKS_CLOCKWISE_JLSTZ: WallKicks[] = [
+  [[ 0, 0], [-1, 0], [-1, 1], [ 0,-2], [-1,-2]],
+  [[ 0, 0], [ 1, 0], [ 1,-1], [ 0, 2], [ 1, 2]],
+  [[ 0, 0], [ 1, 0], [ 1, 1], [ 0,-2], [ 1,-2]],
+  [[ 0, 0], [-1, 0], [-1,-1], [ 0, 2], [-1, 2]],
+]
+
+const KICKS_COUNTERCLOCKWISE_JLSTZ: WallKicks[] = [
+  [[ 0, 0], [ 1, 0], [ 1, 1], [ 0,-2], [ 1,-2]],
+  [[ 0, 0], [-1, 0], [-1,-1], [ 0, 2], [-1, 2]],
+  [[ 0, 0], [-1, 0], [-1, 1], [ 0,-2], [-1,-2]],
+  [[ 0, 0], [ 1, 0], [ 1,-1], [ 0, 2], [ 1, 2]],
+]
+
+const KICKS_O: WallKicks[] = [
+  [[ 0, 0]],
+  [[ 0, 0]],
+  [[ 0, 0]],
+  [[ 0, 0]],
+]

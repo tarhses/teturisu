@@ -1,0 +1,200 @@
+@startuml
+!include style.puml
+
+package Server {
+  abstract class Sender <<abstract>> {
+    +sendRes(res: Res): void
+    +sendErr(err: Err): void
+    +abstract sendJson(json: string): void
+  }
+
+  class WebSocketSender {
+    +sendJson(json: string): void
+  }
+
+  class MockSender {
+    -responses: Res[]
+    +get responses(): Res[]
+    +sendJson(json: string): void
+  }
+
+  class Connection {
+    -server: Server
+    -name: string
+    -session: Session?
+    -sender: Sender
+    +handleRequest(req: Req): void
+  }
+
+  class Session {
+    -id: number
+    -name: string
+    -room: Room
+    -game: Game
+    -inputs: Input[]
+    -startTimestamp: number
+    -sender: Sender
+    +get id(): number
+    +set id(id: number)
+    +get name(): string
+    +get frame(): number
+    +get inputs(): Input[]
+    +get bufferedInputs(): Input[]
+    +get sender(): Sender
+    +start(timestamp?: number): void
+    +leave(): void
+    +handleRequest(req: Req): void
+  }
+
+  class Room {
+    -id: string
+    -server: Server
+    -sessions: Session[]
+    -seed: number
+    -inputsInterval?: Interval
+    +get id(): string
+    +get seed(): number
+    +get started(): boolean
+    +get full(): boolean
+    +get players(): Player[]
+    +add(session: Session): void
+    +remove(session: Session): void
+    +start(): void
+    +broadcast(res: Res): void
+  }
+
+  class Server {
+    -rooms: Map<string, Room>
+    -public: Room?
+    -highscores: Leaderboard
+    +newRoom(): Room
+    +getPublicRoom(): Room
+    +getPrivateRoom(id: string): Room?
+    +deleteRoom(id: string): void
+  }
+
+  class Leaderboard {
+    -db: DB
+    +addScore(name: string, score: number): void
+    +getScores(page: number = 0): Highscore[]
+  }
+
+  WebSocketSender --|> Sender
+  MockSender --|> Sender
+  Server o- Room
+  Room o- Session
+  Connection -> Sender
+  Connection --> Session
+  Connection --> Server
+  Server --> Leaderboard
+}
+
+package Game {
+  class Game {
+    -state: State
+    -clock: Clock
+    -score: Score
+    -grid: Grid
+    -piece: Piece
+    -bag: Bag
+    +get over(): boolean
+    +get frame(): number
+    +handleFrame(): void
+    +handleMove(move: Move): boolean
+    #recordDrop(): void
+    #recordGround(soft: boolean): void
+    #recordLock(piece: Piece, lines: Line[]): void
+    #revertFrame(frame: number): void
+    #revertDrop(): void
+    #revertGround(soft: boolean): void
+    #revertLock(piece: Piece, lines: Line[]): void
+  }
+
+  class BufferedGame {
+    -buffer: Map<number, Move[]>
+    -history: Entry[]
+    +handleInput(input: Input): void
+    +handleFrame(): void
+    #recordDrop(): void
+    #recordGround(soft: boolean): void
+    #recordLock(piece: Piece, lines: Line[]): void
+  }
+
+  enum State <<enum>> {
+    DROPPING
+    SOFT_DROPPING
+    LOCKING
+    OVER
+  }
+
+  class Clock {
+    -frame: number
+    -timer: number
+    +get frame(): number
+    +set frame(frame: number)
+    +set timer(frames: number)
+    +tick(): boolean
+  }
+
+  class Score {
+    -score: number
+    -lines: number
+    +get score(): number
+    +get level(): number
+    +get dropFrames(): number
+    +get dropDistance(): number
+    +get softDropFrames(): number
+    +get lockFrames(): number
+    +registerLines(lines: number): void
+    +unregisterLines(lines: number): void
+    +registerSoftDrop(): void
+    +unregisterSoftDrop(): void
+  }
+
+  class Grid {
+    -cells: number[]
+    +get cells(): Generator<x, y, type>
+    +hasCell(x, y: numbers): boolean
+    +renderPiece(piece: Piece): void
+    +erasePiece(piece: Piece): void
+    +renderLines(lines: Line[]): void
+    +eraseLines(): Line[]
+  }
+
+  class Piece {
+    -grid: Grid
+    -type: number
+    -x: number
+    -y: number
+    -r: number
+    +get type(): number
+    +get cells(): Generator<x, y>
+    +get visible(): boolean
+    +get overlapping(): boolean
+    +shift(dx, dy: numbers): boolean
+    +rotate(dr: number): boolean
+    +render(): void
+    +erase(): void
+  }
+
+  class Bag {
+    -rng: Rng
+    -pieces: number[]
+    +take(): number
+    +peek(n: number): number[]
+    +putBack(type: number): void
+  }
+
+  Game <|- BufferedGame
+  State --* Game
+  Clock --* Game
+  Score --* Game
+  Game *-- Grid
+  Game *-- Piece
+  Game *-- Bag
+  Grid <- Piece
+}
+
+Session -> Game
+
+@enduml

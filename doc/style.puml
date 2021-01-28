@@ -1,0 +1,8 @@
+hide circle
+skinparam {
+  DefaultFontName Cantarell
+  ClassBorderColor #111
+  'ClassAttributeIconSize 0
+  ArrowColor #111
+  Shadowing false
+}

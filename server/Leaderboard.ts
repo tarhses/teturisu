@@ -1,5 +1,5 @@
 import { DB } from './deps.ts'
-import { Score } from '../game/protocol.ts'
+import { Highscore } from '../game/protocol.ts'
 
 export class Leaderboard {
   #db: DB
@@ -30,7 +30,7 @@ export class Leaderboard {
     `, [name, score, Date.now()])
   }
 
-  public getScores(page: number = 0): Score[] {
+  public getScores(page: number = 0): Highscore[] {
     const scores = this.#db.query(`
       SELECT name, score, timestamp FROM scores
       ORDER BY score DESC, rowid ASC

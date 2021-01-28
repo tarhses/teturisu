@@ -1,13 +1,16 @@
-import { serve, acceptWebSocket, WebSocket } from './deps.ts'
-import { validateRequest } from './validation.ts'
+import { Leaderboard } from './Leaderboard.ts'
 import { Server } from './Server.ts'
-import { Session } from './Session.ts'
-import { Request } from '../game/protocol.ts'
+import { Connection } from './Connection.ts'
+import { WebSocketSender } from './Sender.ts'
+import { serve, acceptWebSocket, WebSocket } from './deps.ts'
+import { Req } from '../game/protocol.ts'
 
 const port = Deno.env.get('PORT') ?? '8001'
 const database = Deno.env.get('DATABASE')
 
-const server = new Server(database)
+const highscores = new Leaderboard(database)
+const server = new Server(highscores)
+
 console.info(`listening on port ${port}`)
 
 for await (const req of serve(`:${port}`)) {
@@ -18,35 +21,26 @@ for await (const req of serve(`:${port}`)) {
 }
 
 async function handleWebsocket(socket: WebSocket): Promise<void> {
-  const session = new Session(socket, server)
+  const conn = new Connection(server, new WebSocketSender(socket))
   try {
     for await (const msg of socket) {
       if (typeof msg === 'string') {
         const req = parseRequest(msg)
-        if (req !== null) {
-          session.handleRequest(req)
-        }
+        conn.handleRequest(req)
       }
     }
   } catch (err) {
     console.error(`session error: ${err}`)
-    if (!socket.isClosed) {
-      socket.close(1000).catch(err => console.error(`closing error: ${err}`))
-    }
   } finally {
-    session.disconnect()
+    conn.disconnect()
+    if (!socket.isClosed) {
+      socket.close(1000)
+        .catch(err => console.error(`closing error: ${err}`))
+    }
   }
 }
 
-function parseRequest(json: string): Request | null {
-  const req = JSON.parse(json) as Request
-
-  try {
-    validateRequest(req)
-  } catch (err) {
-    console.error(`validation error: ${err}, ${json}`)
-    return null
-  }
-
-  return req
+function parseRequest(json: string): Req {
+  // TODO: validation
+  return JSON.parse(json) as Req
 }
