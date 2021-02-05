@@ -1,80 +1,91 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { Board } from './Board'
-  import { page } from './store'
-  import socket from './socket'
-  import Container from './components/Container.svelte'
-  import LoadingPage from './components/LoadingPage.svelte'
-  import LobbyPage from './components/LobbyPage.svelte'
-  import GamePage from './components/GamePage.svelte'
-  import type { Response } from '../game/protocol'
-  import { RequestType, ResponseType } from '../game/protocol'
+  import type { RoomInfo } from './protocol'
+  import { updateProfile } from './protocol'
+  import { joinPublicRoom, joinPrivateRoom, createRoom } from './protocol'
+  import RoomPage from './pages/RoomPage.svelte'
+  import HighscoresPage from './pages/HighscoresPage.svelte'
 
-  let seed: number
-  let boards: Board[] = []
-  let selfId: number
+  const name = localStorage.getItem('name') ?? ''
+  if (name.length > 0) {
+    updateProfile(name)
+  }
 
-  onMount(() => {
-    const playerName = localStorage.getItem('name')
-    if (playerName !== null) {
-      socket.send({ type: RequestType.UPDATE_PROFILE, name: playerName })
-    }
+  let promise: Promise<RoomInfo> | undefined = fromPath()
+  let main: HTMLElement
+  let maxHeight = 0
 
-    const roomId = location.pathname.replace('/', '')
-    socket.send(roomId.length === 0
-      ? { type: RequestType.JOIN_ROOM }
-      : { type: RequestType.JOIN_ROOM, id: roomId })
+  onMount(resized)
 
-    function handleResponse(res: Response): void {
-      switch (res.type) {
-        case ResponseType.JOINED_ROOM:
-          $page = res.started ? GamePage : LobbyPage
-          seed = res.seed
-          boards = res.players.map(player => new Board(seed, player))
-          selfId = boards.length - 1
-          history.pushState(null, '', res.id)
-          break
+  function resized(): void {
+    maxHeight = main.clientHeight
+  }
 
-        case ResponseType.ADDED_PLAYER:
-          boards = [...boards, new Board(seed, {
-            name: res.name,
-            frame: 0,
-            inputs: []
-          })]
-          break
-
-        case ResponseType.REMOVED_PLAYER:
-          boards = boards.filter((_, id) => id !== res.id)
-          if (selfId > res.id) {
-            selfId -= 1
-          }
-          break
-
-        case ResponseType.STARTED_GAME:
-          $page = GamePage
-          break
-
-        case ResponseType.RECEIVED_INPUT:
-          for (const [id, inputs] of res.inputs.entries()) {
-            if (id !== selfId) {
-              boards[id].handleInputs(inputs)
-            }
-          }
-          break
-
-        case ResponseType.UPDATED_PROFILE:
-          boards[res.id].name = res.name
-          break
-      }
-    }
-
-    socket.addCallback(handleResponse)
-    return () => socket.removeCallback(handleResponse)
-  })
+  function fromPath(): Promise<RoomInfo> {
+    const id = location.pathname.replace('/', '')
+    return id.length > 0
+      ? joinPrivateRoom(id)
+      : joinPublicRoom()
+  }
 </script>
 
-<Container menu={page !== LoadingPage}>
-  {#key $page}
-    <svelte:component this={$page} {boards} {selfId} />
-  {/key}
-</Container>
+<svelte:window on:resize={resized} />
+<div class="box">
+  <header>
+    <nav>
+      <h1 class="title action" on:click={() => promise = joinPublicRoom()}>TETURISU!</h1>
+      <div class="action" on:click={() => promise = createRoom()}>Create room</div>
+      <div class="action" on:click={() => promise = undefined}>Highscores</div>
+    </nav>
+  </header>
+  <main bind:this={main}>
+    {#if promise === undefined}
+      <HighscoresPage />
+    {:else}
+      {#key promise}
+        <RoomPage {promise} {maxHeight} />
+      {/key}
+    {/if}
+  </main>
+  <footer>
+    <small>&copy; Pierre Luycx, 2021 &mdash; v0.1.0</small>
+  </footer>
+</div>
+
+<style>
+  .box {
+    height: 100%;
+    margin: 0 8px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header, main, footer {
+    display: flex;
+    justify-content: center;
+  }
+
+  main {
+    flex: 1;
+    align-items: center;
+  }
+
+  nav {
+    flex: 0 1 800px;
+    display: flex;
+    align-items: baseline;
+  }
+
+  .title {
+    flex: 1;
+  }
+
+  .action {
+    margin: 0 8px;
+  }
+
+  .action:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+</style>

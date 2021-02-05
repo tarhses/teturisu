@@ -31,7 +31,9 @@ export class Grid {
   }
 
   public hasCell(x: number, y: number): boolean {
-    return this.#cells[y][x] > 0
+    return x >= 0 && y >= 0 && x < WIDTH && y < ACTUAL_HEIGHT
+      ? this.#cells[y][x] > 0
+      : true
   }
 
   public renderPiece(piece: Piece): void {

@@ -53,6 +53,7 @@ package Server {
     -seed: number
     -inputsInterval?: Interval
     +get id(): string
+    +get server(): Server
     +get seed(): number
     +get started(): boolean
     +get full(): boolean
@@ -67,6 +68,7 @@ package Server {
     -rooms: Map<string, Room>
     -public: Room?
     -highscores: Leaderboard
+    +get highscores(): Leaderboard
     +newRoom(): Room
     +getPublicRoom(): Room
     +getPrivateRoom(id: string): Room?
@@ -99,6 +101,9 @@ package Game {
     -bag: Bag
     +get over(): boolean
     +get frame(): number
+    +get score(): number
+    +get nextPiece(): number
+    +get cells(): Generator<x, y, type>
     +handleFrame(): void
     +handleMove(move: Move): boolean
     #recordDrop(): void

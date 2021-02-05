@@ -19,35 +19,35 @@ export default {
     name: 'app',
     file: 'public/build/bundle.js',
     format: 'iife',
-    sourcemap: !production
+    sourcemap: !production,
   },
 
   plugins: [
     svelte({
       preprocess: sveltePreprocess(),
       compilerOptions: {
-        dev: !production
-      }
+        dev: !production,
+      },
     }),
 
     css({
-      output: 'bundle.css'
+      output: 'bundle.css',
     }),
 
     resolve({
       browser: true,
-      dedupe: ['svelte']
+      dedupe: ['svelte'],
     }),
 
     commonjs(),
 
     typescript({
       sourceMap: !production,
-      inlineSources: !production
+      inlineSources: !production,
     }),
 
     production && strip({
-      include: '**/*.(js|ts)'
+      include: '**/*.(js|ts)',
     }),
 
     production && terser(),
@@ -56,13 +56,13 @@ export default {
       open: true,
       contentBase: 'public',
       historyApiFallback: true,
-      port
+      port,
     }),
 
-    !production && livereload('public')
+    !production && livereload('public'),
   ],
 
   watch: {
-    clearScreen: false
-  }
+    clearScreen: false,
+  },
 }

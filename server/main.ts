@@ -31,12 +31,12 @@ async function handleWebsocket(socket: WebSocket): Promise<void> {
     }
   } catch (err) {
     console.error(`session error: ${err}`)
-  } finally {
-    conn.disconnect()
     if (!socket.isClosed) {
       socket.close(1000)
         .catch(err => console.error(`closing error: ${err}`))
     }
+  } finally {
+    conn.disconnect()
   }
 }
 

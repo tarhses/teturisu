@@ -55,7 +55,6 @@ server {
 The game tries to follow [the Tetris Guideline](https://tetris.wiki/Tetris_Guideline) as close as possible but it deviates on certain points:
 
 * _T-spins_, _Back-to-Backs_, and _Combos_ are not rewarded.
-* The speed curve imitates [the NES version](https://tetris.wiki/Tetris_(NES,_Nintendo)).
 * [Hard drops](https://tetris.wiki/Drop#Hard_drop) are not implemented.
 * You cannot [hold a piece](https://tetris.wiki/Hold_piece).
 * There is no [ghost piece](https://tetris.wiki/Ghost_piece).

@@ -23,7 +23,7 @@ export class Leaderboard {
   }
 
   public addScore(name: string, score: number): void {
-    console.log(`new score: ${score} from ${name}`)
+    console.log(`new score: ${name} - ${score}`)
     this.#db.query(`
       INSERT INTO scores (name, score, timestamp)
       VALUES (?, ?, ?)
@@ -37,7 +37,6 @@ export class Leaderboard {
       LIMIT 10 OFFSET ?
     `, [page * 10])
 
-    // @ts-ignore: type will match, trust me
-    return Array.from(scores.asObjects())
+    return Array.from(scores.asObjects()) as Highscore[]
   }
 }

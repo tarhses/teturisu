@@ -1,19 +1,21 @@
 export enum ReqType {
   JOIN_ROOM,
-  LEAVE_ROOM,
   CREATE_ROOM,
+  LEAVE_ROOM,
   START_GAME,
   SEND_INPUTS,
+  SUBMIT_SCORE,
   GET_HIGHSCORES,
   UPDATE_PROFILE,
 }
 
 export type Req =
   { type: ReqType.JOIN_ROOM, id?: string } |
-  { type: ReqType.LEAVE_ROOM } |
   { type: ReqType.CREATE_ROOM } |
+  { type: ReqType.LEAVE_ROOM } |
   { type: ReqType.START_GAME } |
   { type: ReqType.SEND_INPUTS, inputs: Input[] } |
+  { type: ReqType.SUBMIT_SCORE } |
   { type: ReqType.GET_HIGHSCORES, page?: number } |
   { type: ReqType.UPDATE_PROFILE, name: string }
 
@@ -26,6 +28,13 @@ export enum ResType {
   SEND_INPUTS,
   GOT_HIGHSCORES,
   UPDATED_PROFILE,
+  ERROR,
+}
+
+export enum ErrType {
+  INVALID_REQUEST,
+  NONEXISTENT_ROOM,
+  FULL_ROOM,
 }
 
 export type Res =
@@ -36,13 +45,8 @@ export type Res =
   { type: ResType.STARTED_GAME } |
   { type: ResType.SEND_INPUTS, inputs: Input[][] } |
   { type: ResType.GOT_HIGHSCORES, scores: Highscore[] } |
-  { type: ResType.UPDATED_PROFILE, id: number, name: string }
-
-export enum Err {
-  INVALID_REQUEST,
-  NON_EXISTENT_ROOM,
-  FULL_ROOM,
-}
+  { type: ResType.UPDATED_PROFILE, id: number, name: string } |
+  { type: ResType.ERROR, error: ErrType }
 
 export type Input = [Move, number]
 

@@ -10,6 +10,10 @@ export class Server {
     this.#highscores = highscores
   }
 
+  public get highscores(): Leaderboard {
+    return this.#highscores
+  }
+
   public newRoom(): Room {
     const room = new Room(this)
     this.#rooms.set(room.id, room)
@@ -19,6 +23,7 @@ export class Server {
   public getPublicRoom(): Room {
     if (this.#public === undefined || this.#public.full) {
       this.#public = this.newRoom()
+      this.#public.start()
     }
 
     return this.#public

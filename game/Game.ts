@@ -7,7 +7,7 @@ import { Score } from './Score.ts'
 // @ts-ignore: file extension (deno compat)
 import { Grid, Line } from './Grid.ts'
 // @ts-ignore: file extension (deno compat)
-import { Piece } from './Piece.ts'
+import { Piece, PieceType } from './Piece.ts'
 // @ts-ignore: file extension (deno compat)
 import { Bag } from './Bag.ts'
 
@@ -38,6 +38,25 @@ export class Game {
 
   public get frame(): number {
     return this.#clock.frame
+  }
+
+  public get score(): number {
+    return this.#score.score
+  }
+
+  public get nextPiece(): PieceType {
+    return this.#bag.peek(1)[0]
+  }
+
+  public *[Symbol.iterator](): Generator<[number, number, PieceType], void, void> {
+    const type = this.#piece.type
+    for (const [x, y] of this.#piece) {
+      yield [x, y, type]
+    }
+
+    for (const [x, y, type] of this.#grid) {
+      yield [x, y, type]
+    }
   }
 
   public handleFrame(): void {

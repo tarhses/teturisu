@@ -21,6 +21,10 @@ export class Room {
     return this.#id
   }
 
+  public get server(): Server {
+    return this.#server
+  }
+
   public get seed(): number {
     return this.#seed
   }

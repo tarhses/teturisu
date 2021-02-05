@@ -1,7 +1,7 @@
 :root {
   --primary: #48146b;
   --background: #fbf7f0;
-  --rounded: 6px;
+  --rounded: 3px;
 }
 
 html, body {
@@ -19,6 +19,8 @@ body {
 nav {
   color: var(--background);
   background-color: var(--primary);
+  border-bottom-left-radius: var(--rounded);
+  border-bottom-right-radius: var(--rounded);
 }
 
 button {

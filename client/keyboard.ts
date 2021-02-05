@@ -1,8 +1,8 @@
 import { Move } from '../game/protocol'
 
-export type KeyHandler = (code: string) => Move | null
+export type KeyHandler = (code: string) => Move | undefined
 
-export function down(code: string): Move | null {
+export function keyDown(code: string): Move | undefined {
   switch (code) {
     case 'ArrowLeft':
       return Move.LEFT_SHIFT
@@ -22,19 +22,19 @@ export function down(code: string): Move | null {
       return Move.HARD_DROP
 
     case 'ArrowDown':
-      return Move.START_SOFT_DROP
+      return Move.SOFT_DROP_START
 
     default:
-      return null
+      return undefined
   }
 }
 
-export function up(code: string): Move | null {
+export function keyUp(code: string): Move | undefined {
   switch (code) {
     case 'ArrowDown':
-      return Move.STOP_SOFT_DROP
+      return Move.SOFT_DROP_END
 
     default:
-      return null
+      return undefined
   }
 }

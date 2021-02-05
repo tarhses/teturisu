@@ -2,7 +2,7 @@ import { Server } from './Server.ts'
 import { Room } from './Room.ts'
 import { Session } from './Session.ts'
 import { Sender } from './Sender.ts'
-import { Req, ReqType, ResType, Err } from '../game/protocol.ts'
+import { Req, ReqType, ResType, ErrType } from '../game/protocol.ts'
 
 export class Connection {
   #server: Server
@@ -22,8 +22,8 @@ export class Connection {
   public handleRequest(req: Req): void {
     switch (req.type) {
       case ReqType.JOIN_ROOM: this.handleJoinRequest(req.id); break
-      case ReqType.LEAVE_ROOM: this.handleLeaveRequest(); break
       case ReqType.CREATE_ROOM: this.handleCreateRequest(); break
+      case ReqType.LEAVE_ROOM: this.handleLeaveRequest(); break
       case ReqType.GET_HIGHSCORES: this.handleHighscoresRequest(req.page); break
       case ReqType.UPDATE_PROFILE: this.handleProfileUpdateRequest(req.name); break
     }
@@ -41,19 +41,11 @@ export class Connection {
       : this.#server.getPrivateRoom(id)
 
     if (room === undefined) {
-      this.#sender.sendErr(Err.NON_EXISTENT_ROOM)
+      this.#sender.sendErr(ErrType.NONEXISTENT_ROOM)
     } else if (room.full) {
-      this.#sender.sendErr(Err.FULL_ROOM)
+      this.#sender.sendErr(ErrType.FULL_ROOM)
     } else {
       this.join(room)
-    }
-  }
-
-  private handleLeaveRequest(): void {
-    if (this.#session === undefined) {
-      this.#sender.sendErr(Err.INVALID_REQUEST)
-    } else {
-      this.leave()
     }
   }
 
@@ -65,10 +57,18 @@ export class Connection {
     this.join(this.#server.newRoom())
   }
 
+  private handleLeaveRequest(): void {
+    if (this.#session === undefined) {
+      this.#sender.sendErr(ErrType.INVALID_REQUEST)
+    } else {
+      this.leave()
+    }
+  }
+
   private handleHighscoresRequest(page?: number): void {
     this.#sender.sendRes({
       type: ResType.GOT_HIGHSCORES,
-      scores: [], // TODO
+      scores: this.#server.highscores.getScores(page),
     })
   }
 

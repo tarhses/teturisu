@@ -1,14 +1,17 @@
-import { Res, Err } from '../game/protocol.ts'
+import { Res, ResType, ErrType } from '../game/protocol.ts'
 import { WebSocket } from './deps.ts'
 
 export abstract class Sender {
-  public sendRes(res: Res): void {
-    const json = JSON.stringify(res)
+  public sendRes(response: Res): void {
+    const json = JSON.stringify(response)
     this.sendJson(json)
   }
 
-  public sendErr(err: Err): void {
-    this.sendJson(`{"error":${err}}`)
+  public sendErr(error: ErrType): void {
+    this.sendRes({
+      type: ResType.ERROR,
+      error,
+    })
   }
 
   public abstract sendJson(json: string): void

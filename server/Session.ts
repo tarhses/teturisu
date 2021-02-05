@@ -1,7 +1,7 @@
 import { Room } from './Room.ts'
 import { Sender } from './Sender.ts'
 import { Game } from '../game/Game.ts'
-import { Req, ReqType, ResType, Err, Input } from '../game/protocol.ts'
+import { Req, ReqType, ResType, ErrType, Input } from '../game/protocol.ts'
 
 export class Session {
   #id: number
@@ -65,13 +65,14 @@ export class Session {
     switch (req.type) {
       case ReqType.START_GAME: return this.handleStartRequest()
       case ReqType.SEND_INPUTS: return this.handleInputsRequest(req.inputs)
+      case ReqType.SUBMIT_SCORE: return this.handleSubmitRequest()
       case ReqType.UPDATE_PROFILE: return this.handleProfileUpdateRequest(req.name)
     }
   }
 
   private handleStartRequest(): void {
     if (this.#room.started) {
-      this.#sender.sendErr(Err.INVALID_REQUEST)
+      this.#sender.sendErr(ErrType.INVALID_REQUEST)
     } else {
       this.#room.start()
     }
@@ -79,7 +80,7 @@ export class Session {
 
   private handleInputsRequest(inputs: Input[]): void {
     if (!this.#room.started) {
-      this.#sender.sendErr(Err.INVALID_REQUEST)
+      this.#sender.sendErr(ErrType.INVALID_REQUEST)
     } else {
       for (const input of inputs) {
         const [move, frame] = input
@@ -88,6 +89,7 @@ export class Session {
         // * inputs.length < big number
 
         // TODO: check if frame is alright
+        // * !this.#game.over
         // * frame >= this.#game.frame
         // * frame === this.frame +- bias
 
@@ -100,6 +102,16 @@ export class Session {
           this.#inputs.push(input)
         }
       }
+    }
+  }
+
+  private handleSubmitRequest(): void {
+    if (!this.#game.over) {
+      while (!this.#game.over) {
+        this.#game.handleFrame()
+      }
+
+      this.#room.server.highscores.addScore(this.#name, this.#game.score)
     }
   }
 
