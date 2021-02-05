@@ -7,10 +7,12 @@ export function validateRequest(req: Req): void {
 
   switch (req.type) {
     case ReqType.JOIN_ROOM:
-      if (typeof req.id !== 'string') {
-        throw new TypeError('id is not a string')
-      } else if (!/[A-Za-z0-9\-_]{12}/.test(req.id)) {
-        throw new TypeError('id is not a 12-characters base64 string')
+      if (req.id !== undefined) {
+        if (typeof req.id !== 'string') {
+          throw new TypeError('id is not a string')
+        } else if (!/[A-Za-z0-9\-_]{12}/.test(req.id)) {
+          throw new TypeError('id is not a 12-characters base64 string')
+        }
       }
       break
 
