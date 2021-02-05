@@ -1,10 +1,9 @@
 <script lang="ts">
+  import { sendInputs } from '../protocol'
   import type { KeyHandler } from '../keyboard'
   import { keyDown, keyUp } from '../keyboard'
-  import socket from '../socket'
   import GameCanvas from '../components/GameCanvas.svelte'
   import type { Game } from '../../game/Game'
-  import { ReqType } from '../../game/protocol'
 
   export let maxHeight: number
   export let names: string[]
@@ -15,18 +14,16 @@
 
   const handleKey = (handle: KeyHandler) => (e: KeyboardEvent): void => {
     const move = handle(e.code)
-    if (move !== undefined) {
-      if (self.handleMove(move)) {
-        socket.send({
-          type: ReqType.SEND_INPUTS,
-          inputs: [[move, self.frame]],
-        })
-      }
+    if (move !== undefined && self.handleMove(move)) {
+      sendInputs([[move, self.frame]])
     }
   }
 </script>
 
-<svelte:window on:keydown={handleKey(keyDown)} on:keyup={handleKey(keyUp)} />
+<svelte:window
+  on:keydown={handleKey(keyDown)}
+  on:keyup={handleKey(keyUp)}
+/>
 <div class="self">
   <GameCanvas
     host
