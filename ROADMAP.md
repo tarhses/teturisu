@@ -14,11 +14,11 @@ This list follows (more or less) priority order. Items marked with a :book: are 
    2. Add a button cheat sheet at start to teach the player how to play. It could also detect if a touch screen is used.
    3. Juice it? (i.e. screen shake, particles, points display, special effects, sound design, etc.). Add more feedback.
    4. ~~Maybe find a way to display longer player names (a bit broken right now).~~ &rarr; Still a bit broken for host player.
-9. Enhance high scores page.
+9. ~~Enhance high scores page.~~
    1. ~~Leave the current room when displaying it (not the case right now :grin:).~~
-   2. Show the scores' dates.
+   2. ~~Show the scores' dates.~~
    3. ~~Add next and previous buttons to fetch high scores beyond the 10 first ones.~~
-   4. Find a way to make it more accessible (maybe not hidden on a separate page).
+   4. ~~Find a way to make it more accessible (maybe not hidden on a separate page).~~ &rarr; It's alright all things considered.
    5. Add filters maybe ("all time", "this week", "today", etc.).
 10. ~~Code refactoring!~~
     1. ~~Some assertion(s) in the server do(es) not hold (_oops_).~~ &rarr; to check.

@@ -2,6 +2,7 @@ import { Leaderboard } from './Leaderboard.ts'
 import { Server } from './Server.ts'
 import { Connection } from './Connection.ts'
 import { WebSocketSender } from './Sender.ts'
+import { validateRequest } from './validation.ts'
 import { serve, acceptWebSocket, WebSocket } from './deps.ts'
 import { Req } from '../game/protocol.ts'
 
@@ -41,6 +42,11 @@ async function handleWebsocket(socket: WebSocket): Promise<void> {
 }
 
 function parseRequest(json: string): Req {
-  // TODO: validation
-  return JSON.parse(json) as Req
+  const req = JSON.parse(json) as Req
+  try {
+    validateRequest(req)
+  } catch (err) {
+    throw new TypeError(`invalid request '${json}' (${err.message})`)
+  }
+  return req
 }

@@ -58,6 +58,7 @@ export enum Move {
   HARD_DROP,
   SOFT_DROP_START,
   SOFT_DROP_END,
+  COUNT, // keep last
 }
 
 export interface Player {

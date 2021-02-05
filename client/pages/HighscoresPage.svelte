@@ -6,7 +6,13 @@
 
   let page = 0
 
-  onMount(leaveRoom)
+  onMount(async () => {
+    try {
+      await leaveRoom()
+    } catch {
+      // We weren't in a room, no big deal
+    }
+  })
 </script>
 
 <div>
@@ -15,21 +21,31 @@
     <LoadingIndicator />
   {:then scores}
     {#if scores.length > 0}
-      <ol start={page * scores.length + 1}>
+      <ol class="list" start={page * scores.length + 1}>
         {#each scores as { name, score, timestamp }}
-          <li>{name}: {score} at {timestamp}</li>
+          <li>
+            <b>{name}</b>:
+            {score}
+            <small><i>({new Date(timestamp).toLocaleDateString()})</i></small>
+          </li>
         {/each}
       </ol>
-      {#if page > 0}
-        <button on:click={() => page -= 1}>Previous</button>
-      {/if}
-      {#if page < 99}
-        <button on:click={() => page += 1}>Next</button>
-      {/if}
     {:else}
-      <p>No score available.</p>
+      <p><i>No score available.</i></p>
+    {/if}
+    {#if page > 0}
+      <button on:click={() => page -= 1}>Previous page</button>
+    {/if}
+    {#if scores.length > 0 && page < 99}
+      <button on:click={() => page += 1}>Next page</button>
     {/if}
   {:catch err}
     <ErrorIndicator type={err.type} />
   {/await}
 </div>
+
+<style>
+  .list {
+    padding-left: 0;
+  }
+</style>
