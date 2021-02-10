@@ -2,6 +2,8 @@
 
 An online multiplayer Tetris clone written in Typescript with a Svelte front-end and a Deno back-end.
 
+![A screenshot of the game.](doc/screenshot.png)
+
 ## Getting started
 
 To run the server, [Deno](https://deno.land) is required:
